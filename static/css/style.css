@@ -1,0 +1,272 @@
+/* static/css/style.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: #f0f8ff;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+/* --- Controls Panel (Left Side) --- */
+.controls-panel {
+    width: 380px; /* A bit wider for checkboxes */
+    background-color: #ffffff;
+    padding: 2rem;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+.controls-panel h1 {
+    color: #ff6347; /* Tomato Red */
+    text-align: center;
+}
+
+.controls-panel p {
+    text-align: center;
+    color: #555;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    color: #007bff; /* Bright Blue */
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+input[type="number"]:focus {
+    outline: none;
+    border-color: #ff6347;
+}
+
+/* NEW STYLES for connection groups and checkboxes */
+.connection-group {
+    margin-bottom: 1rem;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+.connection-group-title {
+    font-weight: bold;
+    color: #343a40;
+    margin-bottom: 8px;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-item input {
+    margin-right: 5px;
+}
+
+/* --- Graph Panel (Right Side) --- */
+.graph-panel {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+#graph-visualization {
+    width: 100%;
+    height: 100%;
+    border: 3px dashed #bde0fe;
+    border-radius: 15px;
+    background-color: #fdfdfd;
+}
+
+/* --- Modal Styles --- */
+
+.hidden {
+    display: none !important;
+}
+
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#edit-modal {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 350px;
+    text-align: left;
+}
+
+#edit-modal h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+.modal-form-group {
+    margin-bottom: 1.25rem;
+}
+
+.modal-form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.modal-form-group input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.modal-form-group input[type="color"] {
+    width: 100%;
+    height: 40px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.modal-form-group input[type="range"] {
+    width: 75%;
+    vertical-align: middle;
+}
+
+.modal-form-group #modal-size-value {
+    display: inline-block;
+    vertical-align: middle;
+    width: 20%;
+    text-align: right;
+    font-weight: bold;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.modal-actions button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+#modal-save-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+#modal-cancel-btn {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.modal-actions button:hover {
+    opacity: 0.8;
+}
+
+/* static/css/style.css (add these styles at the end) */
+
+/* --- Navigation Button Style (for index.html) --- */
+.nav-button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+    margin-bottom: 1.5rem;
+    background-color: #ff6347; /* Tomato Red */
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+
+.nav-button:hover {
+    background-color: #e5533d;
+}
+
+/* --- Theorem Page Styles --- */
+.theorem-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Space between elements */
+}
+
+.theorem-description {
+    background-color: #eef7ff;
+    border-left: 5px solid #007bff;
+    padding: 15px;
+    border-radius: 0 8px 8px 0;
+}
+
+.theorem-description p {
+    margin: 0;
+    text-align: left;
+}
+
+#simulation-results {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 1rem;
+}
+
+#simulation-results h3 {
+    margin-top: 0;
+    color: #007bff;
+}
+
+#simulation-results .conclusion {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #28a745; /* Green for the "aha!" moment */
+}
