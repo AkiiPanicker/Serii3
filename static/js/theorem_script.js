@@ -1,4 +1,4 @@
-// static/js/theorem_script.js (Final Version with 5 Theorems)
+// static/js/theorem_script.js (Final Version with 7 Theorems)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Get HTML Elements ---
@@ -28,20 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const allNodeIds = nodes.getIds();
         const nodeUpdates = allNodeIds.map(id => ({ id, color: null, label: `${id}` }));
         if (nodeUpdates.length > 0) nodes.update(nodeUpdates);
-
         const allEdges = edges.get();
         const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2 }));
         if (edgeUpdates.length > 0) edges.update(edgeUpdates);
-    }
-
-    function getDegrees() {
-        const degrees = {};
-        nodes.getIds().forEach(id => { degrees[id] = 0; });
-        edges.get().forEach(edge => {
-            degrees[edge.from]++;
-            degrees[edge.to]++;
-        });
-        return degrees;
     }
 
     function buildAdjacencyList() {
@@ -86,23 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
-    /**
-     * Calculates the diameter of a graph given its adjacency list.
-     * Diameter is the "longest shortest path". Returns Infinity if the graph is disconnected.
-     * @returns {Number} The diameter of the graph.
-     */
     function getDiameter(adjList, nodeIds) {
         if (nodeIds.length < 2) return 0;
         let maxEccentricity = 0;
-
         for (const startNode of nodeIds) {
             const distances = {};
             nodeIds.forEach(id => (distances[id] = Infinity));
             distances[startNode] = 0;
-            
             const queue = [startNode];
             let head = 0;
-
             while(head < queue.length) {
                 const u = queue[head++];
                 for (const v of (adjList[u] || [])) {
@@ -112,10 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-
             let currentEccentricity = 0;
             for(const nodeId of nodeIds) {
-                if (distances[nodeId] === Infinity) return Infinity; // Graph is disconnected
+                if (distances[nodeId] === Infinity) return Infinity; // Disconnected
                 currentEccentricity = Math.max(currentEccentricity, distances[nodeId]);
             }
             maxEccentricity = Math.max(maxEccentricity, currentEccentricity);
@@ -123,12 +103,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return maxEccentricity;
     }
 
+
     // --- THEOREM ALGORITHMS ---
 
-    /** Theorem 1: Checks the degree of each vertex. */
+    /** Theorem 1: Vertices of Odd Degree */
     function runOddDegreeAnalysis() {
         resetAllStyles();
-        const degrees = getDegrees();
+        const degrees = nodes.getIds().reduce((acc, id) => { acc[id] = 0; return acc; }, {});
+        edges.get().forEach(edge => {
+            degrees[edge.from]++;
+            degrees[edge.to]++;
+        });
         let oddCount = 0;
         const nodesToUpdate = Object.entries(degrees).map(([nodeId, degree]) => {
             const isOdd = degree % 2 !== 0;
@@ -142,25 +127,25 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = `<h3>Results:</h3><p>Nodes with an odd degree: <strong>${oddCount}</strong></p><div class="conclusion">${oddCount} is an EVEN number!</div>`;
     }
 
-    /** Theorem 2: Checks if the graph is bipartite using 2-coloring BFS. */
+    /** Theorem 2: Bipartite Graph Cycles */
     function runBipartiteAnalysis() {
         resetAllStyles();
         const adj = buildAdjacencyList();
         const nodeIds = nodes.getIds();
-        const colors = {}; // 1 for partition 1, 2 for partition 2
+        const colors = {};
         for (const startNode of nodeIds) {
-            if (!colors[startNode]) { // If not yet colored, start a new BFS
+            if (!colors[startNode]) {
                 const queue = [startNode];
                 colors[startNode] = 1;
                 while (queue.length > 0) {
                     const u = queue.shift();
                     for (const v of (adj[u] || [])) {
-                        if (!colors[v]) { // Neighbor is uncolored
-                            colors[v] = 3 - colors[u]; // The opposite color
+                        if (!colors[v]) {
+                            colors[v] = 3 - colors[u];
                             queue.push(v);
-                        } else if (colors[v] === colors[u]) { // CONFLICT!
+                        } else if (colors[v] === colors[u]) {
                             displayBipartiteResult(false, { u, v }, colors);
-                            return; // End the analysis
+                            return;
                         }
                     }
                 }
@@ -168,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         displayBipartiteResult(true, null, colors);
     }
-
+    
     function displayBipartiteResult(isBipartite, conflict, colors) {
         if (isBipartite) {
             const nodesToUpdate = Object.entries(colors).map(([nodeId, color]) => ({
@@ -185,8 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">NOT Bipartite!</div><p>Nodes ${conflict.u} and ${conflict.v} are connected, but coloring forces them into the same group. This proves an odd cycle exists.</p>`;
         }
     }
-
-    /** Theorem 3: R(3,3)=6, finds a triangle in G or G'. */
+    
+    /** Theorem 3: Ramsey's Theorem (R(3,3)=6) */
     function runRamseyAnalysis() {
         resetAllStyles();
         const nodeIds = nodes.getIds();
@@ -196,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const adj = buildAdjacencyList();
         const triangleInG = findTriangles(adj, nodeIds);
-
         if (triangleInG) {
             highlightTriangle(triangleInG, true);
             resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">Triangle in G Found!</div><p>The nodes ${triangleInG.join(', ')} form a triangle in the graph.</p>`;
@@ -216,62 +200,98 @@ document.addEventListener('DOMContentLoaded', () => {
         nodes.update(triangleNodes.map(id => ({ id: id, color: { background: '#ff7b7b', border: '#d9534f' } })));
         if (inG) {
             const [u, v, w] = triangleNodes;
-            const edgeIdsToUpdate = [u < v ? `${u}-${v}` : `${v}-${u}`, u < w ? `${u}-${w}` : `${w}-${u}`, v < w ? `${v}-${w}` : `${w}-${v}`];
-            const edgeUpdates = edges.get(edgeIdsToUpdate).map(edge => ({...edge, color: 'red', width: 4}));
+            const edgeIds = [u < v ? `${u}-${v}` : `${v}-${u}`, u < w ? `${u}-${w}` : `${w}-${u}`, v < w ? `${v}-${w}` : `${w}-${v}`];
+            const edgeUpdates = edges.get(edgeIds).map(e => ({...e, color: 'red', width: 4}));
             if (edgeUpdates.length > 0) edges.update(edgeUpdates);
         }
     }
 
-    /** Theorem 4: Checks if the number of vertices allows for a self-complementary graph. */
+    /** Theorem 4: Self-Complementary Rule */
     function runSelfComplementaryCheck() {
         resetAllStyles();
         const p = nodes.getIds().length;
-        if (p < 2) {
-            resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`;
-            return;
-        }
-
+        if (p < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`; return; }
         if (p % 4 === 0 || p % 4 === 1) {
             resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CAN</strong> be self-complementary.</p><div class="conclusion">Condition Met</div>`;
         } else {
             resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #d9534f;">Condition NOT Met</div>`;
         }
     }
-
-    /** Theorem 5: Checks the diameter relationship between G and G'. */
+    
+    /** Theorem 5: Graph/Complement Diameter */
     function runDiameterAnalysis() {
         resetAllStyles();
         const nodeIds = nodes.getIds();
-        if (nodeIds.length < 2) {
-            resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`;
-            return;
-        }
-
+        if (nodeIds.length < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`; return; }
         const adjG = buildAdjacencyList();
         const diamG = getDiameter(adjG, nodeIds);
-
         const adjGPrime = buildComplementAdjacencyList();
         const diamGPrime = getDiameter(adjGPrime, nodeIds);
-        
         const diamGStr = diamG === Infinity ? "∞ (Disconnected)" : diamG;
         const diamGPrimeStr = diamGPrime === Infinity ? "∞ (Disconnected)" : diamGPrime;
-        
         let conclusionHTML = `<p>Diameter of your graph, <strong>diam(G) = ${diamGStr}</strong></p>`;
         conclusionHTML += `<p>Diameter of the complement, <strong>diam(G') = ${diamGPrimeStr}</strong></p>`;
-
         if (diamG >= 3) {
             conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> diam(G) is ${diamGStr}, which is ≥ 3.</p>`;
-            if (diamGPrime <= 3) {
-                conclusionHTML += `<div class="conclusion">Theorem Holds! As predicted, diam(G') = ${diamGPrimeStr}, which is ≤ 3.</div>`;
-            } else {
-                 conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Error! diam(G') is not ≤ 3. This is unexpected.</div>`;
-            }
+            conclusionHTML += (diamGPrime <= 3)
+                ? `<div class="conclusion">Theorem Holds! As predicted, diam(G') = ${diamGPrimeStr}, which is ≤ 3.</div>`
+                : `<div class="conclusion" style="color: #d9534f;">Error! This is unexpected.</div>`;
         } else {
-             conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Not Met:</strong> diam(G) is ${diamGStr}, which is not ≥ 3.</p>`;
-             conclusionHTML += `<div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply, but the relationship is still shown.</div>`;
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Not Met:</strong> diam(G) is ${diamGStr}, which is not ≥ 3.</p><div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply, but the relationship is still shown.</div>`;
         }
         resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
     }
+
+    /** Theorem 6: Self-Complementary Diameter */
+    function runSCDiameterAnalysis() {
+        resetAllStyles();
+        const p = nodes.getIds().length;
+        if (p < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Theorem requires a non-trivial graph (2+ vertices).</p>`;
+            return;
+        }
+        if (p % 4 !== 0 && p % 4 !== 1) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>A graph with ${p} vertices <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply.</div>`;
+            return;
+        }
+        const adjG = buildAdjacencyList();
+        const diamG = getDiameter(adjG, nodeIds);
+        const diamGStr = diamG === Infinity ? "∞" : diamG;
+        let conclusionHTML = `<p>A graph with ${p} vertices <strong>CAN</strong> be self-complementary.</p>`;
+        conclusionHTML += `<p>This graph's diameter is: <strong>${diamGStr}</strong></p>`;
+        if (diamG === 2 || diamG === 3) {
+            conclusionHTML += `<div class="conclusion">Theorem Holds! The diameter is 2 or 3, as expected for a self-complementary graph.</div>`;
+        } else {
+            conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Violation! The diameter is not 2 or 3. Therefore, this specific graph is <strong>not</strong> self-complementary.</div>`;
+        }
+        resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+    }
+
+    /** Theorem 7: G or G' is Connected */
+    function runConnectivityAnalysis() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        if (nodeIds.length < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Graph must have at least 2 vertices.</p>`;
+            return;
+        }
+        const adjG = buildAdjacencyList();
+        const diamG = getDiameter(adjG, nodeIds);
+        if (diamG !== Infinity) {
+             resultsContainer.innerHTML = `<h3>Results:</h3><p>Your graph G is <strong>Connected</strong> (diameter = ${diamG}).</p><div class="conclusion">Theorem Holds!</div>`;
+        } else {
+            const adjGPrime = buildComplementAdjacencyList();
+            const diamGPrime = getDiameter(adjGPrime, nodeIds);
+            let conclusionHTML = `<p>Your graph G is <strong>Disconnected</strong>.</p>`;
+            if (diamGPrime !== Infinity) {
+                conclusionHTML += `<p>Its complement G' is <strong>Connected</strong> (diameter = ${diamGPrime}).</p><div class="conclusion">Theorem Holds!</div>`;
+            } else {
+                conclusionHTML += `<p>Its complement G' is also <strong>Disconnected</strong>.</p><div class="conclusion" style="color: #d9534f;">Error! This violates the theorem. (Theoretically impossible).</div>`;
+            }
+             resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+        }
+    }
+
 
     // --- MASTER CONTROL & EVENT LOGIC ---
 
@@ -282,6 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (theorem === 'ramsey_R33') runRamseyAnalysis();
         else if (theorem === 'self_complementary') runSelfComplementaryCheck();
         else if (theorem === 'diameter') runDiameterAnalysis();
+        else if (theorem === 'sc_diameter') runSCDiameterAnalysis();
+        else if (theorem === 'g_g_prime_connected') runConnectivityAnalysis();
     }
 
     function setupNewGraph() {
@@ -289,8 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nodes.clear();
         edges.clear();
         if (num > 0 && num <= 15) {
-            const newNodes = [];
-            for (let i = 1; i <= num; i++) newNodes.push({ id: i, label: `${i}`, size: 25 });
+            const newNodes = Array.from({ length: num }, (_, i) => ({ id: i + 1, label: `${i + 1}`, size: 25 }));
             nodes.add(newNodes);
         }
         createManualControls(num);
@@ -299,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateRandomGraph() {
         const num = parseInt(numNodesInput.value, 10);
-        if (num < 2 || num > 15) return;
+        if (num < 1 || num > 15) return;
         edges.clear();
         const newEdges = [];
         for (let i = 1; i <= num; i++) {
@@ -314,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createManualControls(num) {
         connectionsContainer.innerHTML = '';
-        if (num < 2 || num > 15) return;
+        if (num < 2) return;
         for (let i = 1; i <= num; i++) {
             const group = document.createElement('div');
             group.className = 'connection-group';
@@ -340,27 +361,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleEdgeChange(from, to, isChecked) {
         const edgeId = from < to ? `${from}-${to}` : `${to}-${from}`;
-        if (isChecked && !edges.get(edgeId)) {
-            edges.add({ id: edgeId, from, to });
-        } else if (!isChecked && edges.get(edgeId)) {
-            edges.remove(edgeId);
-        }
+        if (isChecked && !edges.get(edgeId)) edges.add({ id: edgeId, from, to });
+        else if (!isChecked && edges.get(edgeId)) edges.remove(edgeId);
         syncCheckboxesToGraph();
     }
 
     theoremSelect.addEventListener('change', () => {
         document.querySelectorAll('.theorem-description').forEach(d => d.classList.add('hidden'));
         document.getElementById(`theorem-${theoremSelect.value}-description`).classList.remove('hidden');
-
+        
         const isRamsey = theoremSelect.value === 'ramsey_R33';
         numNodesInput.disabled = isRamsey;
-        if (isRamsey) {
-            if(parseInt(numNodesInput.value, 10) !== 6) {
-                numNodesInput.value = 6;
-                setupNewGraph(); 
-            } else {
-                 runActiveTheorem();
-            }
+        if (isRamsey && parseInt(numNodesInput.value, 10) !== 6) {
+            numNodesInput.value = 6;
+            setupNewGraph();
         } else {
             runActiveTheorem();
         }
@@ -369,10 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
     numNodesInput.addEventListener('input', setupNewGraph);
     randomBtn.addEventListener('click', generateRandomGraph);
 
+    // THIS EVENT LISTENER WAS MISSING AND IS THE CAUSE OF THE SYNC BUG
     connectionsContainer.addEventListener('change', (event) => {
         if (event.target.type === 'checkbox') {
             handleEdgeChange(parseInt(event.target.dataset.from), parseInt(event.target.dataset.to), event.target.checked);
-            setTimeout(runActiveTheorem, 50); // Small delay to let graph updates render
+            setTimeout(runActiveTheorem, 50);
         }
     });
 
