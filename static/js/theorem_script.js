@@ -1,4 +1,4 @@
-// static/js/theorem_script.js (Final Version with 11 Theorems)
+// static/js/theorem_script.js (Final Version with 12 Theorems)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Get HTML Elements ---
@@ -14,7 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const edges = new vis.DataSet([]);
     const options = {
         nodes: { shape: 'circle', borderWidth: 2, font: { size: 16, color: '#343a40' } },
-        edges: { width: 2 },
+        edges: { 
+            width: 2,
+            arrows: { to: { enabled: false } } // Arrows disabled globally, enabled per-edge for Eulerian
+        },
         physics: { enabled: true, solver: 'barnesHut' },
         interaction: { hover: true },
         manipulation: { enabled: false }
@@ -32,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const allEdges = edges.get();
         if (allEdges.length > 0) {
-            const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2, dashes: false, hidden: false }));
+            // Ensure arrows from Eulerian path are disabled on reset
+            const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2, dashes: false, hidden: false, arrows: { to: { enabled: false } } }));
             edges.update(edgeUpdates);
         }
         network.off('click'); // Remove any lingering click listeners from interactive proofs
@@ -175,21 +179,224 @@ document.addEventListener('DOMContentLoaded', () => {
         return null; // No path found
     }
 
-    // --- THEOREM ALGORITHMS (Theorems 1-8 are unchanged) ---
+    // --- THEOREM ALGORITHMS ---
 
-    function runOddDegreeAnalysis() { /* Function from previous version */ resetAllStyles(); let oddCount = 0; const nodesToUpdate = Object.entries(getDegrees()).map(([nodeId, degree]) => { const isOdd = degree % 2 !== 0; if (isOdd) oddCount++; return { id: Number(nodeId), label: `Deg: ${degree}`, color: { background: isOdd ? '#ffcc80' : '#a4f5b3', border: isOdd ? '#ff9800' : '#4caf50' } }; }); if (nodesToUpdate.length > 0) nodes.update(nodesToUpdate); resultsContainer.innerHTML = `<h3>Results:</h3><p>Nodes with an odd degree: <strong>${oddCount}</strong></p><div class="conclusion">${oddCount} is an EVEN number!</div>`; }
-    function runBipartiteAnalysis() { /* Function from previous version */ resetAllStyles(); const adj = buildAdjacencyList(); const nodeIds = nodes.getIds(); const colors = {}; for (const startNode of nodeIds) { if (!colors[startNode]) { const queue = [startNode]; colors[startNode] = 1; while (queue.length > 0) { const u = queue.shift(); for (const v of (adj[u] || [])) { if (!colors[v]) { colors[v] = 3 - colors[u]; queue.push(v); } else if (colors[v] === colors[u]) { displayBipartiteResult(false, { u, v }, colors); return; } } } } } displayBipartiteResult(true, null, colors); }
-    function displayBipartiteResult(isBipartite, conflict, colors) { /* Function from previous version */ if (isBipartite) { const nodesToUpdate = Object.entries(colors).map(([nodeId, color]) => ({ id: Number(nodeId), label: `Group ${color}`, color: color === 1 ? { background: '#8ce2ff', border: '#009dff' } : { background: '#ffc382', border: '#ff8c00' } })); if (nodesToUpdate.length > 0) nodes.update(nodesToUpdate); resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">It's Bipartite!</div><p>All nodes can be split into two groups without internal connections.</p>`; } else { nodes.update(Object.keys(colors).map(id => ({ id: Number(id), color: { background: '#d1d1d1', border: '#aaaaaa' } }))); nodes.update([{ id: conflict.u, color: '#ff7b7b' }, { id: conflict.v, color: '#ff7b7b' }]); const conflictEdge = edges.get({ filter: e => (e.from === conflict.u && e.to === conflict.v) || (e.from === conflict.v && e.to === conflict.u) })[0]; if (conflictEdge) edges.update({ id: conflictEdge.id, color: 'red', width: 4 }); resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">NOT Bipartite!</div><p>Nodes ${conflict.u} and ${conflict.v} are connected, but coloring forces them into the same group. This proves an odd cycle exists.</p>`; } }
-    function runRamseyAnalysis() { /* Function from previous version */ resetAllStyles(); const nodeIds = nodes.getIds(); if (nodeIds.length !== 6) { resultsContainer.innerHTML = `<h3>Results:</h3><p class="conclusion" style="color: #d9534f;">Theorem requires 6 nodes.</p><p>This theorem only applies to graphs with exactly 6 vertices.</p>`; return; } const adj = buildAdjacencyList(); const triangleInG = findTriangles(adj, nodeIds); if (triangleInG) { highlightTriangle(triangleInG, true); resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">Triangle in G Found!</div><p>The nodes ${triangleInG.join(', ')} form a triangle in the graph.</p>`; } else { const complementAdj = buildComplementAdjacencyList(); const triangleInGPrime = findTriangles(complementAdj, nodeIds); if (triangleInGPrime) { highlightTriangle(triangleInGPrime, false); resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="background-color: #007bff; color: white;">Triangle in G' Found!</div><p>No triangle exists in G. However, the nodes ${triangleInGPrime.join(', ')} form a triangle in the complement G'.</p>`; } else { resultsContainer.innerHTML = `<h3>Error:</h3><p>The theorem seems to have failed. This is unexpected.</p>`; } } }
-    function highlightTriangle(triangleNodes, inG) { /* Function from previous version */ nodes.update(triangleNodes.map(id => ({ id: id, color: { background: '#ff7b7b', border: '#d9534f' } }))); if (inG) { const [u, v, w] = triangleNodes; const edgeIds = [u < v ? `${u}-${v}` : `${v}-${u}`, u < w ? `${u}-${w}` : `${w}-${u}`, v < w ? `${v}-${w}` : `${w}-${v}`]; const edgeUpdates = edges.get(edgeIds).map(e => ({...e, color: 'red', width: 4})); if (edgeUpdates.length > 0) edges.update(edgeUpdates); } }
-    function runSelfComplementaryCheck() { /* Function from previous version */ resetAllStyles(); const p = nodes.getIds().length; if (p < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`; return; } if (p % 4 === 0 || p % 4 === 1) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CAN</strong> be self-complementary.</p><div class="conclusion">Condition Met</div>`; } else { resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #d9534f;">Condition NOT Met</div>`; } }
-    function runDiameterAnalysis() { /* Function from previous version */ resetAllStyles(); const nodeIds = nodes.getIds(); if (nodeIds.length < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`; return; } const adjG = buildAdjacencyList(); const diamG = getDiameter(adjG, nodeIds); const adjGPrime = buildComplementAdjacencyList(); const diamGPrime = getDiameter(adjGPrime, nodeIds); const diamGStr = diamG === Infinity ? "∞ (Disconnected)" : diamG; const diamGPrimeStr = diamGPrime === Infinity ? "∞ (Disconnected)" : diamGPrime; let conclusionHTML = `<p>Diameter of your graph, <strong>diam(G) = ${diamGStr}</strong></p>`; conclusionHTML += `<p>Diameter of the complement, <strong>diam(G') = ${diamGPrimeStr}</strong></p>`; if (diamG >= 3) { conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> diam(G) is ${diamGStr}, which is ≥ 3.</p>`; conclusionHTML += (diamGPrime <= 3) ? `<div class="conclusion">Theorem Holds! As predicted, diam(G') = ${diamGPrimeStr}, which is ≤ 3.</div>` : `<div class="conclusion" style="color: #d9534f;">Error! This is unexpected.</div>`; } else { conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Not Met:</strong> diam(G) is ${diamGStr}, which is not ≥ 3.</p><div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply, but the relationship is still shown.</div>`; } resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`; }
-    function runSCDiameterAnalysis() { /* Function from previous version */ resetAllStyles(); const p = nodes.getIds().length; if (p < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Theorem requires a non-trivial graph (2+ vertices).</p>`; return; } if (p % 4 !== 0 && p % 4 !== 1) { resultsContainer.innerHTML = `<h3>Results:</h3><p>A graph with ${p} vertices <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply.</div>`; return; } const adjG = buildAdjacencyList(); const diamG = getDiameter(adjG, nodes.getIds()); const diamGStr = diamG === Infinity ? "∞" : diamG; let conclusionHTML = `<p>A graph with ${p} vertices <strong>CAN</strong> be self-complementary.</p>`; conclusionHTML += `<p>This graph's diameter is: <strong>${diamGStr}</strong></p>`; if (diamG === 2 || diamG === 3) { conclusionHTML += `<div class="conclusion">Theorem Holds! The diameter is 2 or 3, as expected for a self-complementary graph.</div>`; } else { conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Violation! The diameter is not 2 or 3. Therefore, this specific graph is <strong>not</strong> self-complementary.</div>`; } resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`; }
-    function runConnectivityAnalysis() { /* Function from previous version */ resetAllStyles(); const nodeIds = nodes.getIds(); if (nodeIds.length < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Graph must have at least 2 vertices.</p>`; return; } const diamG = getDiameter(buildAdjacencyList(), nodeIds); if (diamG !== Infinity) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Your graph G is <strong>Connected</strong> (diameter = ${diamG}).</p><div class="conclusion">Theorem Holds!</div>`; } else { const diamGPrime = getDiameter(buildComplementAdjacencyList(), nodeIds); let conclusionHTML = `<p>Your graph G is <strong>Disconnected</strong>.</p>`; if (diamGPrime !== Infinity) { conclusionHTML += `<p>Its complement G' is <strong>Connected</strong> (diameter = ${diamGPrime}).</p><div class="conclusion">Theorem Holds!</div>`; } else { conclusionHTML += `<p>Its complement G' is also <strong>Disconnected</strong>.</p><div class="conclusion" style="color: #d9534f;">Error! This violates the theorem. (Theoretically impossible).</div>`; } resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`; } }
-    function runMinDegreeConnectivity() { /* Function from previous version */ resetAllStyles(); const nodeIds = nodes.getIds(); const p = nodeIds.length; if (p < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>A graph with ${p} vertex is trivially connected.</p>`; return; } const minDegree = getMinDegree(); const threshold = (p - 1) / 2; const isConnected = getDiameter(buildAdjacencyList(), nodeIds) !== Infinity; let conclusionHTML = `<p>Vertices (p): <strong>${p}</strong></p>`; conclusionHTML += `<p>Minimum Degree (δ): <strong>${minDegree}</strong></p>`; conclusionHTML += `<p>Threshold ((p-1)/2): <strong>${threshold.toFixed(2)}</strong></p>`; if (minDegree > threshold) { conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> δ (${minDegree}) > ${threshold.toFixed(2)}.</p>`; if (isConnected) { conclusionHTML += `<div class="conclusion">Theorem Holds! As predicted, the graph is Connected.</div>`; } else { conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Error! This violates the theorem. (Theoretically impossible).</div>`; } } else { conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition NOT Met:</strong> δ (${minDegree}) ≤ ${threshold.toFixed(2)}.</p>`; conclusionHTML += `<div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem makes no guarantee. This graph is <strong>${isConnected ? 'Connected' : 'Disconnected'}</strong>.</div>`; } resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`; }
+    /** Theorem 1: Vertices of Odd Degree */
+    function runOddDegreeAnalysis() {
+        resetAllStyles();
+        let oddCount = 0;
+        const nodesToUpdate = Object.entries(getDegrees()).map(([nodeId, degree]) => {
+            const isOdd = degree % 2 !== 0;
+            if (isOdd) oddCount++;
+            return {
+                id: Number(nodeId),
+                label: `Deg: ${degree}`,
+                color: { background: isOdd ? '#ffcc80' : '#a4f5b3', border: isOdd ? '#ff9800' : '#4caf50' }
+            };
+        });
+        if (nodesToUpdate.length > 0) nodes.update(nodesToUpdate);
+        resultsContainer.innerHTML = `<h3>Results:</h3><p>Nodes with an odd degree: <strong>${oddCount}</strong></p><div class="conclusion">${oddCount} is an EVEN number!</div>`;
+    }
+
+    /** Theorem 2: Bipartite Graph Cycles */
+    function runBipartiteAnalysis() {
+        resetAllStyles();
+        const adj = buildAdjacencyList();
+        const nodeIds = nodes.getIds();
+        const colors = {};
+        for (const startNode of nodeIds) {
+            if (!colors[startNode]) {
+                const queue = [startNode];
+                colors[startNode] = 1;
+                while (queue.length > 0) {
+                    const u = queue.shift();
+                    for (const v of (adj[u] || [])) {
+                        if (!colors[v]) {
+                            colors[v] = 3 - colors[u];
+                            queue.push(v);
+                        } else if (colors[v] === colors[u]) {
+                            displayBipartiteResult(false, { u, v }, colors);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        displayBipartiteResult(true, null, colors);
+    }
     
+    function displayBipartiteResult(isBipartite, conflict, colors) {
+        if (isBipartite) {
+            const nodesToUpdate = Object.entries(colors).map(([nodeId, color]) => ({
+                id: Number(nodeId),
+                label: `Group ${color}`,
+                color: color === 1 ? { background: '#8ce2ff', border: '#009dff' } : { background: '#ffc382', border: '#ff8c00' }
+            }));
+            if (nodesToUpdate.length > 0) nodes.update(nodesToUpdate);
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">It's Bipartite!</div><p>All nodes can be split into two groups without internal connections.</p>`;
+        } else {
+            nodes.update(Object.keys(colors).map(id => ({ id: Number(id), color: { background: '#d1d1d1', border: '#aaaaaa' } })));
+            nodes.update([{ id: conflict.u, color: '#ff7b7b' }, { id: conflict.v, color: '#ff7b7b' }]);
+            const conflictEdge = edges.get({ filter: e => (e.from === conflict.u && e.to === conflict.v) || (e.from === conflict.v && e.to === conflict.u) })[0];
+            if (conflictEdge) edges.update({ id: conflictEdge.id, color: 'red', width: 4 });
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">NOT Bipartite!</div><p>Nodes ${conflict.u} and ${conflict.v} are connected, but coloring forces them into the same group. This proves an odd cycle exists.</p>`;
+        }
+    }
+    
+    /** Theorem 3: Ramsey's Theorem (R(3,3)=6) */
+    function runRamseyAnalysis() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        if (nodeIds.length !== 6) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p class="conclusion" style="color: #d9534f;">Theorem requires 6 nodes.</p><p>This theorem only applies to graphs with exactly 6 vertices.</p>`;
+            return;
+        }
+        const adj = buildAdjacencyList();
+        const triangleInG = findTriangles(adj, nodeIds);
+        if (triangleInG) {
+            highlightTriangle(triangleInG, true);
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">Triangle in G Found!</div><p>The nodes ${triangleInG.join(', ')} form a triangle in the graph.</p>`;
+        } else {
+            const complementAdj = buildComplementAdjacencyList();
+            const triangleInGPrime = findTriangles(complementAdj, nodeIds);
+            if (triangleInGPrime) {
+                highlightTriangle(triangleInGPrime, false);
+                resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="background-color: #007bff; color: white;">Triangle in G' Found!</div><p>No triangle exists in G. However, the nodes ${triangleInGPrime.join(', ')} form a triangle in the complement G'.</p>`;
+            } else {
+                resultsContainer.innerHTML = `<h3>Error:</h3><p>The theorem seems to have failed. This is unexpected.</p>`;
+            }
+        }
+    }
+
+    function highlightTriangle(triangleNodes, inG) {
+        nodes.update(triangleNodes.map(id => ({ id: id, color: { background: '#ff7b7b', border: '#d9534f' } })));
+        if (inG) {
+            const [u, v, w] = triangleNodes;
+            const edgeIds = [u < v ? `${u}-${v}` : `${v}-${u}`, u < w ? `${u}-${w}` : `${w}-${u}`, v < w ? `${v}-${w}` : `${w}-${v}`];
+            const edgeUpdates = edges.get(edgeIds).map(e => ({...e, color: 'red', width: 4}));
+            if (edgeUpdates.length > 0) edges.update(edgeUpdates);
+        }
+    }
+
+    /** Theorem 4: Self-Complementary Rule */
+    function runSelfComplementaryCheck() {
+        resetAllStyles();
+        const p = nodes.getIds().length;
+        if (p < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`; return; }
+        if (p % 4 === 0 || p % 4 === 1) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CAN</strong> be self-complementary.</p><div class="conclusion">Condition Met</div>`;
+        } else {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #d9534f;">Condition NOT Met</div>`;
+        }
+    }
+    
+    /** Theorem 5: Graph/Complement Diameter */
+    function runDiameterAnalysis() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        if (nodeIds.length < 2) { resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`; return; }
+        const adjG = buildAdjacencyList();
+        const diamG = getDiameter(adjG, nodeIds);
+        const adjGPrime = buildComplementAdjacencyList();
+        const diamGPrime = getDiameter(adjGPrime, nodeIds);
+        const diamGStr = diamG === Infinity ? "∞ (Disconnected)" : diamG;
+        const diamGPrimeStr = diamGPrime === Infinity ? "∞ (Disconnected)" : diamGPrime;
+        let conclusionHTML = `<p>Diameter of your graph, <strong>diam(G) = ${diamGStr}</strong></p>`;
+        conclusionHTML += `<p>Diameter of the complement, <strong>diam(G') = ${diamGPrimeStr}</strong></p>`;
+        if (diamG >= 3) {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> diam(G) is ${diamGStr}, which is ≥ 3.</p>`;
+            conclusionHTML += (diamGPrime <= 3)
+                ? `<div class="conclusion">Theorem Holds! As predicted, diam(G') = ${diamGPrimeStr}, which is ≤ 3.</div>`
+                : `<div class="conclusion" style="color: #d9534f;">Error! This is unexpected.</div>`;
+        } else {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Not Met:</strong> diam(G) is ${diamGStr}, which is not ≥ 3.</p><div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply, but the relationship is still shown.</div>`;
+        }
+        resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+    }
+
+    /** Theorem 6: Self-Complementary Diameter */
+    function runSCDiameterAnalysis() {
+        resetAllStyles();
+        const p = nodes.getIds().length;
+        if (p < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Theorem requires a non-trivial graph (2+ vertices).</p>`;
+            return;
+        }
+        if (p % 4 !== 0 && p % 4 !== 1) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>A graph with ${p} vertices <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply.</div>`;
+            return;
+        }
+        const adjG = buildAdjacencyList();
+        const diamG = getDiameter(adjG, nodes.getIds());
+        const diamGStr = diamG === Infinity ? "∞" : diamG;
+        let conclusionHTML = `<p>A graph with ${p} vertices <strong>CAN</strong> be self-complementary.</p>`;
+        conclusionHTML += `<p>This graph's diameter is: <strong>${diamGStr}</strong></p>`;
+        if (diamG === 2 || diamG === 3) {
+            conclusionHTML += `<div class="conclusion">Theorem Holds! The diameter is 2 or 3, as expected for a self-complementary graph.</div>`;
+        } else {
+            conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Violation! The diameter is not 2 or 3. Therefore, this specific graph is <strong>not</strong> self-complementary.</div>`;
+        }
+        resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+    }
+
+    /** Theorem 7: G or G' is Connected */
+    function runConnectivityAnalysis() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        if (nodeIds.length < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Graph must have at least 2 vertices.</p>`;
+            return;
+        }
+        const diamG = getDiameter(buildAdjacencyList(), nodeIds);
+        if (diamG !== Infinity) {
+             resultsContainer.innerHTML = `<h3>Results:</h3><p>Your graph G is <strong>Connected</strong> (diameter = ${diamG}).</p><div class="conclusion">Theorem Holds!</div>`;
+        } else {
+            const diamGPrime = getDiameter(buildComplementAdjacencyList(), nodeIds);
+            let conclusionHTML = `<p>Your graph G is <strong>Disconnected</strong>.</p>`;
+            if (diamGPrime !== Infinity) {
+                conclusionHTML += `<p>Its complement G' is <strong>Connected</strong> (diameter = ${diamGPrime}).</p><div class="conclusion">Theorem Holds!</div>`;
+            } else {
+                conclusionHTML += `<p>Its complement G' is also <strong>Disconnected</strong>.</p><div class="conclusion" style="color: #d9534f;">Error! This violates the theorem. (Theoretically impossible).</div>`;
+            }
+             resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+        }
+    }
+
+    /** Theorem 8: Minimum Degree Connectivity */
+    function runMinDegreeConnectivity() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        const p = nodeIds.length;
+        if (p < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>A graph with ${p} vertex is trivially connected.</p>`;
+            return;
+        }
+
+        const minDegree = getMinDegree();
+        const threshold = (p - 1) / 2;
+        const isConnected = getDiameter(buildAdjacencyList(), nodeIds) !== Infinity;
+
+        let conclusionHTML = `<p>Vertices (p): <strong>${p}</strong></p>`;
+        conclusionHTML += `<p>Minimum Degree (δ): <strong>${minDegree}</strong></p>`;
+        conclusionHTML += `<p>Threshold ((p-1)/2): <strong>${threshold.toFixed(2)}</strong></p>`;
+
+        if (minDegree > threshold) {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> δ (${minDegree}) > ${threshold.toFixed(2)}.</p>`;
+            if (isConnected) {
+                conclusionHTML += `<div class="conclusion">Theorem Holds! As predicted, the graph is Connected.</div>`;
+            } else {
+                 conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Error! This violates the theorem. (Theoretically impossible).</div>`;
+            }
+        } else {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition NOT Met:</strong> δ (${minDegree}) ≤ ${threshold.toFixed(2)}.</p>`;
+            conclusionHTML += `<div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem makes no guarantee. This graph is <strong>${isConnected ? 'Connected' : 'Disconnected'}</strong>.</div>`;
+        }
+        resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+    }
+
     /** Theorem 9: Unique Path in a Tree */
     function runUniquePathAnalysis() {
+        resetAllStyles();
         const { isTree, isConnected, components } = analyzeGraphProperties();
 
         if (isTree) {
@@ -237,6 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /** Theorem 10: Edges in a Tree */
     function runTreeEdgesAnalysis() {
+        resetAllStyles();
         const { isTree, p, q } = analyzeGraphProperties();
         let html = `<h3>Results:</h3><p>Vertices (p): <strong>${p}</strong></p><p>Edges (q): <strong>${q}</strong></p>`;
 
@@ -281,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /** Theorem 11: Center of a Tree */
     async function runTreeCenterAnalysis() {
+        resetAllStyles();
         const { isTree, p } = analyzeGraphProperties();
         if (!isTree) {
             resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">This is NOT a Tree!</div><p>This theorem only applies to trees.</p>`;
@@ -339,6 +548,109 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML += `<div class="conclusion">${conclusion}</div>`;
     }
 
+    /** Theorem 12: Eulerian Circuit */
+    function findEulerianCircuit() {
+        // Implementation of Hierholzer's algorithm
+        const adj = buildAdjacencyList();
+        const nodeIds = nodes.getIds();
+        if(nodeIds.length === 0) return null;
+
+        // Clone the adjacency list to track unused edges, as we'll be modifying it
+        let adjClone = {};
+        for (const key in adj) {
+            adjClone[key] = [...adj[key]];
+        }
+    
+        // Find a starting node. In a connected graph with even degrees, any node works.
+        const startNode = nodeIds[0];
+        let currPath = [startNode]; // A temporary path/stack
+        let circuit = []; // The final circuit
+    
+        while (currPath.length > 0) {
+            let u = currPath[currPath.length - 1]; // Current vertex is top of the stack
+            // If there's an unused edge from the current vertex
+            if (adjClone[u].length > 0) {
+                // Find a neighbor and move to it
+                let v = adjClone[u].pop();
+                
+                // Remove the corresponding edge from the neighbor's list to mark it as used
+                // This is crucial for undirected graphs.
+                const v_index = adjClone[v].indexOf(u);
+                if (v_index > -1) {
+                    adjClone[v].splice(v_index, 1);
+                }
+
+                // Add the new vertex to the current path
+                currPath.push(v);
+            } else {
+                // If the current vertex has no more outgoing edges,
+                // it means we've completed a cycle (or sub-cycle).
+                // Add it to our final circuit.
+                circuit.push(currPath.pop());
+            }
+        }
+        
+        // The circuit is built backwards, so we reverse it for the correct order
+        return circuit.reverse();
+    }
+    
+    function runEulerianAnalysis() {
+        resetAllStyles();
+        const { p, isConnected } = analyzeGraphProperties();
+        const degrees = getDegrees();
+        const oddDegreeVertices = Object.keys(degrees).filter(id => degrees[id] % 2 !== 0);
+        
+        if (p === 0) {
+            resultsContainer.innerHTML = '<h3>Results:</h3><p>Graph is empty.</p>';
+            return;
+        }
+
+        if (!isConnected) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">NOT Eulerian</div><p>The graph must be connected to have an Eulerian circuit.</p>`;
+            return;
+        }
+
+        if (oddDegreeVertices.length > 0) {
+            nodes.update(oddDegreeVertices.map(id => ({ id: Number(id), color: { background: '#ff7b7b', border: '#d9534f' } })));
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">NOT Eulerian</div><p>All vertices must have an even degree. Problematic vertices: <strong>${oddDegreeVertices.join(', ')}</strong></p>`;
+        } else {
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">IS Eulerian!</div><p>The graph is connected and all vertices have an even degree.</p><button id="find-circuit-btn" class="form-button">Find Eulerian Circuit</button>`;
+            
+            document.getElementById('find-circuit-btn').addEventListener('click', async (e) => {
+                const btn = e.target;
+                btn.disabled = true;
+                btn.innerText = 'Animating...';
+
+                const circuit = findEulerianCircuit();
+                if (!circuit) return;
+                
+                let pathString = `<strong>Circuit:</strong> ${circuit[0]}`;
+                resultsContainer.innerHTML = `<h3>Step-by-Step Pathfinding:</h3><p id="circuit-path-display">${pathString}</p>`;
+                const pathDisplay = document.getElementById('circuit-path-display');
+
+                nodes.update({ id: circuit[0], color: { background: '#a4f5b3' }});
+                
+                for(let i = 0; i < circuit.length - 1; i++) {
+                    const u = circuit[i];
+                    const v = circuit[i+1];
+                    const edgeId = u < v ? `${u}-${v}` : `${v}-${u}`;
+                    
+                    await new Promise(r => setTimeout(r, 600)); // Pause between steps
+                    
+                    edges.update({ id: edgeId, color: '#4caf50', width: 4, arrows: {to: {enabled: true, scaleFactor:1.2}}});
+                    nodes.update({ id: v, color: { background: '#a4f5b3' }});
+
+                    pathString += ` &rarr; ${v}`;
+                    pathDisplay.innerHTML = pathString;
+                }
+                
+                resultsContainer.innerHTML += `<div class="conclusion" style="margin-top: 15px;">Circuit Complete!</div>`;
+                btn.style.display = 'none'; // Hide button after animation completes
+            });
+        }
+    }
+
+
     // --- MASTER CONTROL & EVENT LOGIC ---
 
     function runActiveTheorem() {
@@ -355,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (theorem === 'unique_path') runUniquePathAnalysis();
         else if (theorem === 'tree_edges') runTreeEdgesAnalysis();
         else if (theorem === 'tree_center') runTreeCenterAnalysis();
+        else if (theorem === 'eulerian') runEulerianAnalysis(); // Added new theorem
     }
 
     function setupNewGraph() {
