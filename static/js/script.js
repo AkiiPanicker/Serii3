@@ -1,12 +1,12 @@
 // static/js/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Get HTML elements ---
+    // --- Get HTML elements for the graph creator ---
     const numNodesInput = document.getElementById('num-nodes');
     const connectionsContainer = document.getElementById('connections-container');
     const graphContainer = document.getElementById('graph-visualization');
 
-    // Modal elements
+    // --- Get HTML elements for the Edit Modal ---
     const modalOverlay = document.getElementById('modal-overlay');
     const editModal = document.getElementById('edit-modal');
     const modalLabelInput = document.getElementById('modal-label-input');
@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalSaveBtn = document.getElementById('modal-save-btn');
     const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
+    // --- Get HTML elements for the Welcome Modal ---
+    const welcomeModalOverlay = document.getElementById('welcome-modal-overlay');
+    const welcomeModalCloseBtn = document.getElementById('welcome-modal-close-btn');
+
     let currentlyEditingNodeId = null;
 
     // --- VIS.JS SETUP ---
@@ -24,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const options = {
         nodes: {
             shape: 'circle',
-            // THIS LINE HAS BEEN REMOVED: size: 25,
             borderWidth: 2,
             font: { size: 16, color: '#343a40' }
         },
@@ -36,7 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const network = new vis.Network(graphContainer, { nodes: nodes, edges: edges }, options);
 
 
-    // --- Core Functions ---
+    // --- Logic for the Welcome Modal ---
+    
+    // Function to show the welcome modal with a smooth fade-in effect
+    const showWelcomeModal = () => {
+        if (welcomeModalOverlay) {
+            welcomeModalOverlay.classList.add('visible');
+        }
+    };
+
+    // Function to hide the welcome modal
+    const hideWelcomeModal = () => {
+        if (welcomeModalOverlay) {
+            // A class is used to control visibility, allowing for CSS transitions
+            welcomeModalOverlay.classList.remove('visible');
+        }
+    };
+
+    // Add a click listener to the close button
+    if (welcomeModalCloseBtn) {
+        welcomeModalCloseBtn.addEventListener('click', hideWelcomeModal);
+    }
+    
+    // This line is crucial: It calls the function to show the modal when the page is ready
+    showWelcomeModal();
+
+    // --- Core Graph Creator Functions ---
 
     function setupControlsAndGraph() {
         const num = parseInt(numNodesInput.value, 10) || 0;
@@ -108,8 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-
-    // --- Modal Logic ---
+    // --- Edit Node Modal Logic ---
     
     function openEditModal(nodeId) {
         currentlyEditingNodeId = nodeId;
@@ -146,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         closeModal();
     }
-
 
     // --- Event Listeners ---
 
