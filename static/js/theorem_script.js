@@ -1,4 +1,4 @@
-// static/js/theorem_script.js (completely rewritten for multi-theorem support)
+// static/js/theorem_script.js (Final Version with 5 Theorems)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Get HTML Elements ---
@@ -54,13 +54,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return adj;
     }
 
+    function buildComplementAdjacencyList() {
+        const adj = {};
+        const nodeIds = nodes.getIds();
+        nodeIds.forEach(id => adj[id] = []);
+        const existingEdges = new Set(edges.get().map(e => e.from < e.to ? `${e.from}-${e.to}` : `${e.to}-${e.from}`));
+        for (let i = 0; i < nodeIds.length; i++) {
+            for (let j = i + 1; j < nodeIds.length; j++) {
+                const u = nodeIds[i], v = nodeIds[j];
+                if (!existingEdges.has(`${u}-${v}`)) {
+                    adj[u].push(v);
+                    adj[v].push(u);
+                }
+            }
+        }
+        return adj;
+    }
+
     function findTriangles(adjList, nodeIds) {
         if (nodeIds.length < 3) return null;
         for (let i = 0; i < nodeIds.length; i++) {
             for (let j = i + 1; j < nodeIds.length; j++) {
                 for (let k = j + 1; k < nodeIds.length; k++) {
                     const u = nodeIds[i], v = nodeIds[j], w = nodeIds[k];
-                    if (adjList[u].includes(v) && adjList[u].includes(w) && adjList[v].includes(w)) {
+                    if ((adjList[u]?.includes(v)) && (adjList[u]?.includes(w)) && (adjList[v]?.includes(w))) {
                         return [u, v, w];
                     }
                 }
@@ -69,7 +86,44 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
-    // --- ALGORITHMS ---
+    /**
+     * Calculates the diameter of a graph given its adjacency list.
+     * Diameter is the "longest shortest path". Returns Infinity if the graph is disconnected.
+     * @returns {Number} The diameter of the graph.
+     */
+    function getDiameter(adjList, nodeIds) {
+        if (nodeIds.length < 2) return 0;
+        let maxEccentricity = 0;
+
+        for (const startNode of nodeIds) {
+            const distances = {};
+            nodeIds.forEach(id => (distances[id] = Infinity));
+            distances[startNode] = 0;
+            
+            const queue = [startNode];
+            let head = 0;
+
+            while(head < queue.length) {
+                const u = queue[head++];
+                for (const v of (adjList[u] || [])) {
+                    if (distances[v] === Infinity) {
+                        distances[v] = distances[u] + 1;
+                        queue.push(v);
+                    }
+                }
+            }
+
+            let currentEccentricity = 0;
+            for(const nodeId of nodeIds) {
+                if (distances[nodeId] === Infinity) return Infinity; // Graph is disconnected
+                currentEccentricity = Math.max(currentEccentricity, distances[nodeId]);
+            }
+            maxEccentricity = Math.max(maxEccentricity, currentEccentricity);
+        }
+        return maxEccentricity;
+    }
+
+    // --- THEOREM ALGORITHMS ---
 
     /** Theorem 1: Checks the degree of each vertex. */
     function runOddDegreeAnalysis() {
@@ -80,8 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isOdd = degree % 2 !== 0;
             if (isOdd) oddCount++;
             return {
-                id: Number(nodeId),
-                label: `Deg: ${degree}`,
+                id: Number(nodeId), label: `Deg: ${degree}`,
                 color: { background: isOdd ? '#ffcc80' : '#a4f5b3', border: isOdd ? '#ff9800' : '#4caf50' }
             };
         });
@@ -95,12 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const adj = buildAdjacencyList();
         const nodeIds = nodes.getIds();
         const colors = {}; // 1 for partition 1, 2 for partition 2
-        
         for (const startNode of nodeIds) {
             if (!colors[startNode]) { // If not yet colored, start a new BFS
                 const queue = [startNode];
                 colors[startNode] = 1;
-
                 while (queue.length > 0) {
                     const u = queue.shift();
                     for (const v of (adj[u] || [])) {
@@ -117,25 +168,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         displayBipartiteResult(true, null, colors);
     }
-    
+
     function displayBipartiteResult(isBipartite, conflict, colors) {
         if (isBipartite) {
             const nodesToUpdate = Object.entries(colors).map(([nodeId, color]) => ({
                 id: Number(nodeId), label: `Group ${color}`,
                 color: color === 1 ? { background: '#8ce2ff', border: '#009dff' } : { background: '#ffc382', border: '#ff8c00' }
             }));
-            if(nodesToUpdate.length > 0) nodes.update(nodesToUpdate);
-            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">It's Bipartite!</div><p>All nodes can be split into two groups (blue and orange) without internal connections.</p>`;
+            if (nodesToUpdate.length > 0) nodes.update(nodesToUpdate);
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">It's Bipartite!</div><p>All nodes can be split into two groups without internal connections.</p>`;
         } else {
             nodes.update(Object.keys(colors).map(id => ({ id: Number(id), color: { background: '#d1d1d1', border: '#aaaaaa' } })));
-            nodes.update([ {id: conflict.u, color: '#ff7b7b'}, {id: conflict.v, color: '#ff7b7b'} ]);
-            const conflictEdge = edges.get({filter: e => (e.from === conflict.u && e.to === conflict.v) || (e.from === conflict.v && e.to === conflict.u)})[0];
-            if (conflictEdge) edges.update({id: conflictEdge.id, color: 'red', width: 4});
-
+            nodes.update([{ id: conflict.u, color: '#ff7b7b' }, { id: conflict.v, color: '#ff7b7b' }]);
+            const conflictEdge = edges.get({ filter: e => (e.from === conflict.u && e.to === conflict.v) || (e.from === conflict.v && e.to === conflict.u) })[0];
+            if (conflictEdge) edges.update({ id: conflictEdge.id, color: 'red', width: 4 });
             resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">NOT Bipartite!</div><p>Nodes ${conflict.u} and ${conflict.v} are connected, but coloring forces them into the same group. This proves an odd cycle exists.</p>`;
         }
     }
-    
+
     /** Theorem 3: R(3,3)=6, finds a triangle in G or G'. */
     function runRamseyAnalysis() {
         resetAllStyles();
@@ -155,63 +205,75 @@ document.addEventListener('DOMContentLoaded', () => {
             const triangleInGPrime = findTriangles(complementAdj, nodeIds);
             if (triangleInGPrime) {
                 highlightTriangle(triangleInGPrime, false);
-                resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="background-color: #007bff; color: white;">Triangle in G' Found!</div><p>No triangle exists in the drawn graph (G). However, the nodes ${triangleInGPrime.join(', ')} are not connected to each other, forming a triangle in the complement graph (G').</p>`;
+                resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="background-color: #007bff; color: white;">Triangle in G' Found!</div><p>No triangle exists in G. However, the nodes ${triangleInGPrime.join(', ')} form a triangle in the complement G'.</p>`;
             } else {
-                 resultsContainer.innerHTML = `<h3>Error:</h3><p>The theorem seems to have failed. This is unexpected.</p>`;
+                resultsContainer.innerHTML = `<h3>Error:</h3><p>The theorem seems to have failed. This is unexpected.</p>`;
             }
         }
-    }
-
-    function buildComplementAdjacencyList() {
-        const adj = {};
-        const nodeIds = nodes.getIds();
-        nodeIds.forEach(id => adj[id] = []);
-        const existingEdges = new Set(edges.get().map(e => e.from < e.to ? `${e.from}-${e.to}` : `${e.to}-${e.from}`));
-        for (let i = 0; i < nodeIds.length; i++) {
-            for (let j = i + 1; j < nodeIds.length; j++) {
-                const u = nodeIds[i], v = nodeIds[j];
-                if (!existingEdges.has(`${u}-${v}`)) {
-                    adj[u].push(v);
-                    adj[v].push(u);
-                }
-            }
-        }
-        return adj;
     }
 
     function highlightTriangle(triangleNodes, inG) {
         nodes.update(triangleNodes.map(id => ({ id: id, color: { background: '#ff7b7b', border: '#d9534f' } })));
         if (inG) {
             const [u, v, w] = triangleNodes;
-            const edgeUpdates = [
-                { id: u < v ? `${u}-${v}` : `${v}-${u}`, color: 'red', width: 4 },
-                { id: u < w ? `${u}-${w}` : `${w}-${u}`, color: 'red', width: 4 },
-                { id: v < w ? `${v}-${w}` : `${w}-${v}`, color: 'red', width: 4 },
-            ].filter(e => edges.get(e.id)); // Only update existing edges
-            edges.update(edgeUpdates);
+            const edgeIdsToUpdate = [u < v ? `${u}-${v}` : `${v}-${u}`, u < w ? `${u}-${w}` : `${w}-${u}`, v < w ? `${v}-${w}` : `${w}-${v}`];
+            const edgeUpdates = edges.get(edgeIdsToUpdate).map(edge => ({...edge, color: 'red', width: 4}));
+            if (edgeUpdates.length > 0) edges.update(edgeUpdates);
         }
     }
-    
+
     /** Theorem 4: Checks if the number of vertices allows for a self-complementary graph. */
     function runSelfComplementaryCheck() {
         resetAllStyles();
         const p = nodes.getIds().length;
-
         if (p < 2) {
-             resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes to the graph.</p>`;
-             return;
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`;
+            return;
         }
 
         if (p % 4 === 0 || p % 4 === 1) {
-            resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p>
-            <p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CAN</strong> be self-complementary.</p>
-            <div class="conclusion">Condition Met</div>`;
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CAN</strong> be self-complementary.</p><div class="conclusion">Condition Met</div>`;
         } else {
-            resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p>
-            <p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CANNOT</strong> be self-complementary.</p>
-            <div class="conclusion" style="color: #d9534f;">Condition NOT Met</div>`;
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Number of vertices (p) = <strong>${p}</strong></p><p>A graph with ${p} vertices (p mod 4 = ${p % 4}) <strong>CANNOT</strong> be self-complementary.</p><div class="conclusion" style="color: #d9534f;">Condition NOT Met</div>`;
         }
     }
+
+    /** Theorem 5: Checks the diameter relationship between G and G'. */
+    function runDiameterAnalysis() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        if (nodeIds.length < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>Please add at least 2 nodes.</p>`;
+            return;
+        }
+
+        const adjG = buildAdjacencyList();
+        const diamG = getDiameter(adjG, nodeIds);
+
+        const adjGPrime = buildComplementAdjacencyList();
+        const diamGPrime = getDiameter(adjGPrime, nodeIds);
+        
+        const diamGStr = diamG === Infinity ? "∞ (Disconnected)" : diamG;
+        const diamGPrimeStr = diamGPrime === Infinity ? "∞ (Disconnected)" : diamGPrime;
+        
+        let conclusionHTML = `<p>Diameter of your graph, <strong>diam(G) = ${diamGStr}</strong></p>`;
+        conclusionHTML += `<p>Diameter of the complement, <strong>diam(G') = ${diamGPrimeStr}</strong></p>`;
+
+        if (diamG >= 3) {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> diam(G) is ${diamGStr}, which is ≥ 3.</p>`;
+            if (diamGPrime <= 3) {
+                conclusionHTML += `<div class="conclusion">Theorem Holds! As predicted, diam(G') = ${diamGPrimeStr}, which is ≤ 3.</div>`;
+            } else {
+                 conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Error! diam(G') is not ≤ 3. This is unexpected.</div>`;
+            }
+        } else {
+             conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Not Met:</strong> diam(G) is ${diamGStr}, which is not ≥ 3.</p>`;
+             conclusionHTML += `<div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem does not apply, but the relationship is still shown.</div>`;
+        }
+        resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+    }
+
+    // --- MASTER CONTROL & EVENT LOGIC ---
 
     function runActiveTheorem() {
         const theorem = theoremSelect.value;
@@ -219,9 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (theorem === 'bipartite') runBipartiteAnalysis();
         else if (theorem === 'ramsey_R33') runRamseyAnalysis();
         else if (theorem === 'self_complementary') runSelfComplementaryCheck();
+        else if (theorem === 'diameter') runDiameterAnalysis();
     }
-    
-    // --- CONTROL PANEL & GRAPH SETUP LOGIC ---
 
     function setupNewGraph() {
         const num = parseInt(numNodesInput.value, 10);
@@ -229,13 +290,13 @@ document.addEventListener('DOMContentLoaded', () => {
         edges.clear();
         if (num > 0 && num <= 15) {
             const newNodes = [];
-            for (let i = 1; i <= num; i++) newNodes.push({id: i, label: `${i}`, size: 25 });
+            for (let i = 1; i <= num; i++) newNodes.push({ id: i, label: `${i}`, size: 25 });
             nodes.add(newNodes);
         }
         createManualControls(num);
         runActiveTheorem();
     }
-    
+
     function generateRandomGraph() {
         const num = parseInt(numNodesInput.value, 10);
         if (num < 2 || num > 15) return;
@@ -243,14 +304,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const newEdges = [];
         for (let i = 1; i <= num; i++) {
             for (let j = i + 1; j <= num; j++) {
-                if (Math.random() < 0.4) newEdges.push({id: `${i}-${j}`, from: i, to: j});
+                if (Math.random() < 0.4) newEdges.push({ id: `${i}-${j}`, from: i, to: j });
             }
         }
         edges.add(newEdges);
         syncCheckboxesToGraph();
-        setTimeout(runActiveTheorem, 0);
+        setTimeout(runActiveTheorem, 50);
     }
-    
+
     function createManualControls(num) {
         connectionsContainer.innerHTML = '';
         if (num < 2 || num > 15) return;
@@ -276,24 +337,30 @@ document.addEventListener('DOMContentLoaded', () => {
                   .forEach(cb => cb.checked = true);
         });
     }
-    
+
     function handleEdgeChange(from, to, isChecked) {
         const edgeId = from < to ? `${from}-${to}` : `${to}-${from}`;
-        if(isChecked && !edges.get(edgeId)) edges.add({id: edgeId, from, to});
-        else if(!isChecked && edges.get(edgeId)) edges.remove(edgeId);
+        if (isChecked && !edges.get(edgeId)) {
+            edges.add({ id: edgeId, from, to });
+        } else if (!isChecked && edges.get(edgeId)) {
+            edges.remove(edgeId);
+        }
         syncCheckboxesToGraph();
     }
-    
-    // --- EVENT LISTENERS ---
 
     theoremSelect.addEventListener('change', () => {
         document.querySelectorAll('.theorem-description').forEach(d => d.classList.add('hidden'));
         document.getElementById(`theorem-${theoremSelect.value}-description`).classList.remove('hidden');
 
-        numNodesInput.disabled = theoremSelect.value === 'ramsey_R33';
-        if (theoremSelect.value === 'ramsey_R33' && parseInt(numNodesInput.value, 10) !== 6) {
-            numNodesInput.value = 6;
-            setupNewGraph(); 
+        const isRamsey = theoremSelect.value === 'ramsey_R33';
+        numNodesInput.disabled = isRamsey;
+        if (isRamsey) {
+            if(parseInt(numNodesInput.value, 10) !== 6) {
+                numNodesInput.value = 6;
+                setupNewGraph(); 
+            } else {
+                 runActiveTheorem();
+            }
         } else {
             runActiveTheorem();
         }
