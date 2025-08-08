@@ -270,3 +270,184 @@ input[type="number"]:focus {
     font-weight: bold;
     color: #28a745; /* Green for the "aha!" moment */
 }
+/* ADD THIS ENTIRE BLOCK TO THE END OF YOUR static/css/style.css FILE */
+
+/* --- Decorative Welcome Modal For Yuvika --- */
+#welcome-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); /* A dark, focused overlay */
+    z-index: 2000; /* Ensure it's on top of everything */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* For the smooth fade-in animation */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#welcome-modal-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#welcome-modal {
+    /* Beautiful gradient background */
+    background: radial-gradient(circle, #5b99e5, #0a4f9b);
+    color: #ffffff;
+    padding: 30px 45px;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    max-width: 480px;
+    width: 90%;
+    border: 2px solid #aed4ff;
+
+    /* For the smooth pop-in animation effect */
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#welcome-modal-overlay.visible #welcome-modal {
+    transform: scale(1) translateY(0);
+}
+
+.welcome-title {
+    font-family: 'Dancing Script', cursive; /* The special font */
+    font-size: 4.5em; /* Large, elegant size */
+    font-weight: 700;
+    color: #ffd700; /* A beautiful gold color */
+    margin: 0;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.welcome-text {
+    font-family: 'Nunito', sans-serif; /* Use your site's main font */
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin: 20px 0;
+    color: #f0f8ff; /* A soft, almost-white color */
+    text-align: center;
+}
+
+.welcome-gift-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ffda79; /* A light gold to match the title */
+    margin: 25px 0 30px 0;
+}
+
+#welcome-modal-close-btn {
+    background-color: #ffd700;
+    color: #3b3a30;
+    font-weight: bold;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#welcome-modal-close-btn:hover {
+    background-color: #ffec8b;
+    transform: translateY(-2px); /* Lifts the button slightly on hover */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+/* --- START: ADD THIS CODE TO THE END OF YOUR CSS FILE --- */
+
+/* --- Decorative Welcome Modal For Yuvika --- */
+#welcome-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); /* Darker overlay */
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* For the smooth fade-in animation */
+    opacity: 0;
+    pointer-events: none; /* Can't click on it while invisible */
+    transition: opacity 0.5s ease-in-out;
+}
+
+#welcome-modal-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#welcome-modal {
+    background: radial-gradient(circle, #5b99e5, #0a4f9b);
+    color: #ffffff;
+    padding: 30px 45px;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    max-width: 480px;
+    width: 90%;
+    border: 2px solid #aed4ff;
+    
+    /* Smooth pop-in animation */
+    transform: scale(0.9);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#welcome-modal-overlay.visible #welcome-modal {
+    transform: scale(1);
+}
+
+.welcome-title {
+    font-family: 'Dancing Script', cursive; /* Special font */
+    font-size: 4.5em;
+    font-weight: 700;
+    color: #ffd700; /* Gold color */
+    margin: 0;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.welcome-text {
+    font-family: 'Nunito', sans-serif; /* Your site's main font */
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin: 20px 0;
+    color: #f0f8ff; /* Soft white */
+    text-align: center;
+}
+
+.welcome-gift-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ffda79;
+    margin: 25px 0 30px 0;
+}
+
+#welcome-modal-close-btn {
+    background-color: #ffd700;
+    color: #3b3a30;
+    font-weight: bold;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#welcome-modal-close-btn:hover {
+    background-color: #ffec8b;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* --- END OF CODE TO ADD --- */
