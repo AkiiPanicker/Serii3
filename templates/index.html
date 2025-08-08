@@ -9,6 +9,13 @@
     <!-- Link to our CSS file for styling -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
+    <!-- vvvv ADDED THIS vvvv -->
+    <!-- Link to Google Fonts for the special 'Dancing Script' font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <!-- ^^^^ END OF ADDED CODE ^^^^ -->
+    
     <!-- Link to the Vis.js library for drawing the graph -->
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 </head>
@@ -62,6 +69,22 @@
             </div>
         </div>
     </div>
+
+    <!-- vvvv ADDED THIS vvvv -->
+    <!-- HTML for the decorative welcome message box -->
+    <div id="welcome-modal-overlay">
+        <div id="welcome-modal">
+            <div class="welcome-title">For Yuvika</div>
+            <p class="welcome-text">
+                I made this little graph playground for you. 
+                I hope you enjoy playing with it! You can explore the theorems from your course
+                or just get creative and build your own.
+            </p>
+            <p class="welcome-gift-text">A small gift from me to you. </p>
+            <button id="welcome-modal-close-btn">Okay!</button>
+        </div>
+    </div>
+    <!-- ^^^^ END OF ADDED CODE ^^^^ -->
 
     <!-- Link to our JavaScript file for interactivity -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
