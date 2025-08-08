@@ -18,7 +18,7 @@
             
             <div class="form-group">
                 <label for="theorem-select">Select a Theorem:</label>
-                <!-- vvvv The <select> is now active vvvv -->
+                <!-- vvvv The <select> has new theorems vvvv -->
                 <select id="theorem-select" class="form-control">
                     <option value="odd_degree">1. Vertices of Odd Degree</option>
                     <option value="bipartite">2. Bipartite Graph Cycles</option>
@@ -28,11 +28,14 @@
                     <option value="sc_diameter">6. Self-Complementary Diameter</option>
                     <option value="g_g_prime_connected">7. G or G' is Connected</option>
                     <option value="min_degree_connect">8. Minimum Degree Connectivity</option>
+                    <option value="unique_path">9. Unique Path in a Tree</option>
+                    <option value="tree_edges">10. Edges in a Tree</option>
+                    <option value="tree_center">11. Center of a Tree</option>
                 </select>
                 <!-- ^^^^ End <select> update ^^^^ -->
             </div>
 
-            <!-- vvvv All description boxes, only one will be visible vvvv -->
+            <!-- vvvv All description boxes, including new ones vvvv -->
             <div id="theorem-odd_degree-description" class="theorem-description">
                 <p><strong>Theorem 1:</strong> In any graph, the number of nodes with an odd number of connections is always an even number.</p>
             </div>
@@ -56,6 +59,15 @@
             </div>
             <div id="theorem-min_degree_connect-description" class="theorem-description hidden">
                 <p><strong>Theorem 8:</strong> If a graph G with p vertices has a minimum degree <strong>δ(G) > (p-1)/2</strong>, then G must be <strong>connected</strong>.</p>
+           </div>
+           <div id="theorem-unique_path-description" class="theorem-description hidden">
+                <p><strong>Theorem 9:</strong> A graph G is a <strong>tree</strong> if and only if there is a <strong>unique path</strong> between every pair of its vertices.</p>
+           </div>
+           <div id="theorem-tree_edges-description" class="theorem-description hidden">
+                <p><strong>Theorem 10:</strong> A <strong>tree</strong> with `p` vertices has exactly <strong>`p-1` edges</strong>.</p>
+           </div>
+           <div id="theorem-tree_center-description" class="theorem-description hidden">
+                <p><strong>Theorem 11:</strong> Every <strong>tree</strong> has a center consisting of either <strong>one vertex</strong> or <strong>two adjacent vertices</strong>.</p>
            </div>
             <!-- ^^^^ End description boxes ^^^^ -->
             
