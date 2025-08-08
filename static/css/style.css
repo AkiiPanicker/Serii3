@@ -270,3 +270,39 @@ input[type="number"]:focus {
     font-weight: bold;
     color: #28a745; /* Green for the "aha!" moment */
 }
+.proof-box {
+    margin-top: 1.5rem;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Times New Roman', Times, serif; /* Give it a formal look */
+    color: #444;
+}
+
+.proof-box h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+}
+
+/* --- Layout for Ramsey Theorem --- */
+.graph-panel-container {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    gap: 1.5rem;
+}
+
+.split-graph-panel {
+    flex: 1; /* Each takes half the space */
+    display: flex;
+    flex-direction: column;
+}
+
+.split-graph-panel h2 {
+    text-align: center;
+    margin-top: 0;
+    color: #555;
+}
