@@ -1,4 +1,4 @@
-// static/js/theorem_script.js (Final Version with 7 Theorems)
+// static/js/theorem_script.js (Final Version with 8 Theorems)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Get HTML Elements ---
@@ -26,16 +26,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetAllStyles() {
         const allNodeIds = nodes.getIds();
-        const nodeUpdates = allNodeIds.map(id => ({ id, color: null, label: `${id}` }));
-        if (nodeUpdates.length > 0) nodes.update(nodeUpdates);
+        if (allNodeIds.length > 0) {
+            const nodeUpdates = allNodeIds.map(id => ({ id, color: null, label: `${id}` }));
+            nodes.update(nodeUpdates);
+        }
         const allEdges = edges.get();
-        const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2 }));
-        if (edgeUpdates.length > 0) edges.update(edgeUpdates);
+        if (allEdges.length > 0) {
+            const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2 }));
+            edges.update(edgeUpdates);
+        }
+    }
+    
+    function getDegrees() {
+        const degrees = nodes.getIds().reduce((acc, id) => { acc[id] = 0; return acc; }, {});
+        edges.get().forEach(edge => {
+            degrees[edge.from]++;
+            degrees[edge.to]++;
+        });
+        return degrees;
+    }
+
+    function getMinDegree() {
+        const degrees = getDegrees();
+        const degreeValues = Object.values(degrees);
+        return degreeValues.length > 0 ? Math.min(...degreeValues) : 0;
     }
 
     function buildAdjacencyList() {
-        const adj = {};
-        nodes.getIds().forEach(id => { adj[id] = []; });
+        const adj = nodes.getIds().reduce((acc, id) => { acc[id] = []; return acc; }, {});
         edges.get().forEach(edge => {
             adj[edge.from].push(edge.to);
             adj[edge.to].push(edge.from);
@@ -109,13 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /** Theorem 1: Vertices of Odd Degree */
     function runOddDegreeAnalysis() {
         resetAllStyles();
-        const degrees = nodes.getIds().reduce((acc, id) => { acc[id] = 0; return acc; }, {});
-        edges.get().forEach(edge => {
-            degrees[edge.from]++;
-            degrees[edge.to]++;
-        });
         let oddCount = 0;
-        const nodesToUpdate = Object.entries(degrees).map(([nodeId, degree]) => {
+        const nodesToUpdate = Object.entries(getDegrees()).map(([nodeId, degree]) => {
             const isOdd = degree % 2 !== 0;
             if (isOdd) oddCount++;
             return {
@@ -255,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const adjG = buildAdjacencyList();
-        const diamG = getDiameter(adjG, nodeIds);
+        const diamG = getDiameter(adjG, nodes.getIds());
         const diamGStr = diamG === Infinity ? "∞" : diamG;
         let conclusionHTML = `<p>A graph with ${p} vertices <strong>CAN</strong> be self-complementary.</p>`;
         conclusionHTML += `<p>This graph's diameter is: <strong>${diamGStr}</strong></p>`;
@@ -275,13 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsContainer.innerHTML = `<h3>Results:</h3><p>Graph must have at least 2 vertices.</p>`;
             return;
         }
-        const adjG = buildAdjacencyList();
-        const diamG = getDiameter(adjG, nodeIds);
+        const diamG = getDiameter(buildAdjacencyList(), nodeIds);
         if (diamG !== Infinity) {
              resultsContainer.innerHTML = `<h3>Results:</h3><p>Your graph G is <strong>Connected</strong> (diameter = ${diamG}).</p><div class="conclusion">Theorem Holds!</div>`;
         } else {
-            const adjGPrime = buildComplementAdjacencyList();
-            const diamGPrime = getDiameter(adjGPrime, nodeIds);
+            const diamGPrime = getDiameter(buildComplementAdjacencyList(), nodeIds);
             let conclusionHTML = `<p>Your graph G is <strong>Disconnected</strong>.</p>`;
             if (diamGPrime !== Infinity) {
                 conclusionHTML += `<p>Its complement G' is <strong>Connected</strong> (diameter = ${diamGPrime}).</p><div class="conclusion">Theorem Holds!</div>`;
@@ -292,6 +303,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /** Theorem 8: Minimum Degree Connectivity */
+    function runMinDegreeConnectivity() {
+        resetAllStyles();
+        const nodeIds = nodes.getIds();
+        const p = nodeIds.length;
+        if (p < 2) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>A graph with ${p} vertex is trivially connected.</p>`;
+            return;
+        }
+
+        const minDegree = getMinDegree();
+        const threshold = (p - 1) / 2;
+        const isConnected = getDiameter(buildAdjacencyList(), nodeIds) !== Infinity;
+
+        let conclusionHTML = `<p>Vertices (p): <strong>${p}</strong></p>`;
+        conclusionHTML += `<p>Minimum Degree (δ): <strong>${minDegree}</strong></p>`;
+        conclusionHTML += `<p>Threshold ((p-1)/2): <strong>${threshold.toFixed(2)}</strong></p>`;
+
+        if (minDegree > threshold) {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition Met:</strong> δ (${minDegree}) > ${threshold.toFixed(2)}.</p>`;
+            if (isConnected) {
+                conclusionHTML += `<div class="conclusion">Theorem Holds! As predicted, the graph is Connected.</div>`;
+            } else {
+                 conclusionHTML += `<div class="conclusion" style="color: #d9534f;">Error! This violates the theorem. (Theoretically impossible).</div>`;
+            }
+        } else {
+            conclusionHTML += `<p style="margin-top: 15px;"><strong>Condition NOT Met:</strong> δ (${minDegree}) ≤ ${threshold.toFixed(2)}.</p>`;
+            conclusionHTML += `<div class="conclusion" style="color: #6c757d; background-color: #f0f0f0;">The theorem makes no guarantee. This graph is <strong>${isConnected ? 'Connected' : 'Disconnected'}</strong>.</div>`;
+        }
+        resultsContainer.innerHTML = `<h3>Results:</h3>${conclusionHTML}`;
+    }
 
     // --- MASTER CONTROL & EVENT LOGIC ---
 
@@ -304,10 +346,11 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (theorem === 'diameter') runDiameterAnalysis();
         else if (theorem === 'sc_diameter') runSCDiameterAnalysis();
         else if (theorem === 'g_g_prime_connected') runConnectivityAnalysis();
+        else if (theorem === 'min_degree_connect') runMinDegreeConnectivity();
     }
 
     function setupNewGraph() {
-        const num = parseInt(numNodesInput.value, 10);
+        const num = parseInt(numNodesInput.value, 10) || 0;
         nodes.clear();
         edges.clear();
         if (num > 0 && num <= 15) {
@@ -383,7 +426,6 @@ document.addEventListener('DOMContentLoaded', () => {
     numNodesInput.addEventListener('input', setupNewGraph);
     randomBtn.addEventListener('click', generateRandomGraph);
 
-    // THIS EVENT LISTENER WAS MISSING AND IS THE CAUSE OF THE SYNC BUG
     connectionsContainer.addEventListener('change', (event) => {
         if (event.target.type === 'checkbox') {
             handleEdgeChange(parseInt(event.target.dataset.from), parseInt(event.target.dataset.to), event.target.checked);
