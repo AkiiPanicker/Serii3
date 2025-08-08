@@ -18,64 +18,54 @@
             
             <div class="form-group">
                 <label for="theorem-select">Select a Theorem:</label>
+                <!-- vvvv The <select> is now active vvvv -->
                 <select id="theorem-select" class="form-control">
                     <option value="odd_degree">1. Vertices of Odd Degree</option>
                     <option value="bipartite">2. Bipartite Graph Cycles</option>
-                    <option value="ramsey">3. Ramsey's Theorem R(3,3)</option>
-                    <option value="self_comp">4. Self-Complementary Graphs</option>
+                    <option value="ramsey_R33">3. Ramsey's Theorem (R(3,3)=6)</option>
+                    <option value="self_complementary">4. Self-Complementary Graph Rule</option>
                 </select>
+                <!-- ^^^^ End <select> update ^^^^ -->
             </div>
 
-            <!-- Description Boxes -->
-            <div id="theorem-odd_degree-description" class="theorem-description"><p><strong>Thm 1:</strong> # of odd degree nodes is always even.</p></div>
-            <div id="theorem-bipartite-description" class="theorem-description hidden"><p><strong>Thm 2:</strong> A graph is bipartite if and only if it has no odd-length cycles.</p></div>
-            <div id="theorem-ramsey-description" class="theorem-description hidden"><p><strong>Thm 3:</strong> Any graph with 6 vertices must have either a triangle (K3) or its complement must have a triangle.</p></div>
-            <div id="theorem-self_comp-description" class="theorem-description hidden"><p><strong>Thm 4:</strong> A self-complementary graph can only have a number of vertices `p` where `p` is `4n` or `4n+1`.</p></div>
+            <!-- vvvv All description boxes, only one will be visible vvvv -->
+            <div id="theorem-odd_degree-description" class="theorem-description">
+                <p><strong>Theorem 1:</strong> In any graph, the number of nodes with an odd number of connections is always an even number.</p>
+            </div>
+            <div id="theorem-bipartite-description" class="theorem-description hidden">
+                <p><strong>Theorem 2:</strong> A graph is <strong>bipartite</strong> (can be split into two groups where no node connects to its own group) if and only if it has <strong>no odd-length cycles</strong>.</p>
+            </div>
+            <div id="theorem-ramsey_R33-description" class="theorem-description hidden">
+                <p><strong>Theorem 3 (R(3,3)=6):</strong> For any graph <strong>G</strong> with exactly six vertices, either <strong>G</strong> contains a triangle, or its complement graph <strong>G'</strong> contains a triangle.</p>
+            </div>
+            <div id="theorem-self_complementary-description" class="theorem-description hidden">
+                <p><strong>Theorem 4:</strong> If a graph is <strong>self-complementary</strong> (isomorphic to its own complement), then the number of vertices it has must be of the form <strong>4n</strong> or <strong>4n+1</strong> for some integer n.</p>
+            </div>
+            <!-- ^^^^ End description boxes ^^^^ -->
             
-            <!-- Controls Area (dynamically shown/hidden) -->
-            <div id="graph-controls">
-                <div class="form-group">
-                    <label for="sim-num-nodes">1. Set number of nodes:</label>
-                    <input type="number" id="sim-num-nodes" min="2" max="15" value="6">
-                </div>
-                <button id="generate-random-btn">Generate Random Graph</button>
-                <div class="form-group">
-                    <label>2. Or, manually connect nodes:</label>
-                    <div id="connections-container"></div>
-                </div>
+            <div class="form-group">
+                <label for="sim-num-nodes">1. Set the number of nodes:</label>
+                <input type="number" id="sim-num-nodes" min="2" max="15" value="5">
             </div>
 
-            <!-- Theorem 4 Controls -->
-            <div id="self-comp-controls" class="hidden">
-                <div class="form-group">
-                    <label for="self-comp-input">Enter Number of Vertices (p):</label>
-                    <input type="number" id="self-comp-input" min="1" max="50" value="5">
+            <button id="generate-random-btn">Generate Random Graph</button>
+            
+            <div class="form-group">
+                <label>2. Or, manually connect the nodes:</label>
+                <div id="connections-container">
+                    <!-- Checkboxes will be dynamically inserted here -->
                 </div>
             </div>
             
-            <!-- Results and Proof Boxes -->
-            <div id="simulation-results"></div>
-            <div id="theorem-odd_degree-proof" class="proof-box"></div>
-            <div id="theorem-bipartite-proof" class="proof-box hidden"></div>
-            <div id="theorem-ramsey-proof" class="proof-box hidden"></div>
-            <div id="theorem-self_comp-proof" class="proof-box hidden"></div>
+            <div id="simulation-results">
+                <h3>Results:</h3>
+                <p>Start connecting nodes or generate a random graph!</p>
+            </div>
         </div>
 
         <!-- Right Side Panel -->
-        <div id="main-graph-panel" class="graph-panel">
+        <div class="graph-panel">
             <div id="graph-visualization"></div>
-        </div>
-        
-        <!-- Special Panel for Ramsey Theorem -->
-        <div id="ramsey-graph-panel" class="graph-panel-container hidden">
-            <div class="split-graph-panel">
-                <h2>Graph (G)</h2>
-                <div id="graph-g-visualization" class="graph-visualization"></div>
-            </div>
-            <div class="split-graph-panel">
-                <h2>Complement (G')</h2>
-                <div id="graph-g-comp-visualization" class="graph-visualization"></div>
-            </div>
         </div>
     </div>
 
