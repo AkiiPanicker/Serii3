@@ -18,7 +18,7 @@
             
             <div class="form-group">
                 <label for="theorem-select">Select a Theorem:</label>
-                <!-- vvvv The <select> has new theorems vvvv -->
+                <!-- vvvv The <select> has the new theorem vvvv -->
                 <select id="theorem-select" class="form-control">
                     <option value="odd_degree">1. Vertices of Odd Degree</option>
                     <option value="bipartite">2. Bipartite Graph Cycles</option>
@@ -31,43 +31,47 @@
                     <option value="unique_path">9. Unique Path in a Tree</option>
                     <option value="tree_edges">10. Edges in a Tree</option>
                     <option value="tree_center">11. Center of a Tree</option>
+                    <option value="eulerian">12. Eulerian Circuit</option>
                 </select>
                 <!-- ^^^^ End <select> update ^^^^ -->
             </div>
 
-            <!-- vvvv All description boxes, including new ones vvvv -->
+            <!-- vvvv All description boxes, including the new one vvvv -->
             <div id="theorem-odd_degree-description" class="theorem-description">
                 <p><strong>Theorem 1:</strong> In any graph, the number of nodes with an odd number of connections is always an even number.</p>
             </div>
             <div id="theorem-bipartite-description" class="theorem-description hidden">
-                <p><strong>Theorem 2:</strong> A graph is <strong>bipartite</strong> (can be split into two groups where no node connects to its own group) if and only if it has <strong>no odd-length cycles</strong>.</p>
+                <p><strong>Theorem 2:</strong> A graph is <strong>bipartite</strong> if and only if it has <strong>no odd-length cycles</strong>.</p>
             </div>
             <div id="theorem-ramsey_R33-description" class="theorem-description hidden">
                 <p><strong>Theorem 3 (R(3,3)=6):</strong> For any graph <strong>G</strong> with six vertices, either <strong>G</strong> or its complement <strong>G'</strong> contains a triangle.</p>
             </div>
             <div id="theorem-self_complementary-description" class="theorem-description hidden">
-                <p><strong>Theorem 4:</strong> If a graph is <strong>self-complementary</strong>, then its number of vertices must be of the form <strong>4n</strong> or <strong>4n+1</strong>.</p>
+                <p><strong>Theorem 4:</strong> If a graph is <strong>self-complementary</strong>, its number of vertices must be of the form <strong>4n</strong> or <strong>4n+1</strong>.</p>
             </div>
             <div id="theorem-diameter-description" class="theorem-description hidden">
-                <p><strong>Theorem 5:</strong> For any connected graph <strong>G</strong>, if its diameter is 3 or more, then the diameter of its complement <strong>G'</strong> must be 3 or less.</p>
+                <p><strong>Theorem 5:</strong> If a connected graph's diameter is ≥ 3, its complement's diameter must be ≤ 3.</p>
             </div>
             <div id="theorem-sc_diameter-description" class="theorem-description hidden">
                  <p><strong>Theorem 6:</strong> Every nontrivial self-complementary graph has a diameter of <strong>2 or 3</strong>.</p>
             </div>
             <div id="theorem-g_g_prime_connected-description" class="theorem-description hidden">
-                 <p><strong>Theorem 7:</strong> For any graph <strong>G</strong>, either <strong>G</strong> is connected or its complement <strong>G'</strong> is connected (or both).</p>
+                 <p><strong>Theorem 7:</strong> For any graph <strong>G</strong>, either <strong>G</strong> or its complement <strong>G'</strong> is connected (or both).</p>
             </div>
             <div id="theorem-min_degree_connect-description" class="theorem-description hidden">
-                <p><strong>Theorem 8:</strong> If a graph G with p vertices has a minimum degree <strong>δ(G) > (p-1)/2</strong>, then G must be <strong>connected</strong>.</p>
+                <p><strong>Theorem 8:</strong> If δ(G) > (p-1)/2, then G must be <strong>connected</strong>.</p>
            </div>
            <div id="theorem-unique_path-description" class="theorem-description hidden">
-                <p><strong>Theorem 9:</strong> A graph G is a <strong>tree</strong> if and only if there is a <strong>unique path</strong> between every pair of its vertices.</p>
+                <p><strong>Theorem 9:</strong> A graph is a <strong>tree</strong> if and only if there is a <strong>unique path</strong> between every pair of its vertices.</p>
            </div>
            <div id="theorem-tree_edges-description" class="theorem-description hidden">
                 <p><strong>Theorem 10:</strong> A <strong>tree</strong> with `p` vertices has exactly <strong>`p-1` edges</strong>.</p>
            </div>
            <div id="theorem-tree_center-description" class="theorem-description hidden">
                 <p><strong>Theorem 11:</strong> Every <strong>tree</strong> has a center consisting of either <strong>one vertex</strong> or <strong>two adjacent vertices</strong>.</p>
+           </div>
+           <div id="theorem-eulerian-description" class="theorem-description hidden">
+                <p><strong>Theorem 12:</strong> A non-empty connected graph has an <strong>Eulerian circuit</strong> if and only if every vertex has an <strong>even degree</strong>.</p>
            </div>
             <!-- ^^^^ End description boxes ^^^^ -->
             
