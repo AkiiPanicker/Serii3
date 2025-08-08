@@ -18,21 +18,28 @@
             
             <div class="form-group">
                 <label for="theorem-select">Select a Theorem:</label>
-                <select id="theorem-select" class="form-control" disabled> <!-- Disabled as we only have one -->
-                    <option value="odd_degree">Vertices of Odd Degree</option>
+                <!-- vvvv The <select> is now active vvvv -->
+                <select id="theorem-select" class="form-control">
+                    <option value="odd_degree">1. Vertices of Odd Degree</option>
+                    <option value="bipartite">2. Bipartite Graph Cycles</option>
                 </select>
+                <!-- ^^^^ End <select> update ^^^^ -->
             </div>
 
-            <div id="theorem-1-description" class="theorem-description">
-                <p><strong>Theorem:</strong> In any graph, the number of nodes with an odd number of connections is always an even number.</p>
+            <!-- vvvv Two description boxes, one will be hidden at a time vvvv -->
+            <div id="theorem-odd_degree-description" class="theorem-description">
+                <p><strong>Theorem 1:</strong> In any graph, the number of nodes with an odd number of connections is always an even number.</p>
             </div>
+            <div id="theorem-bipartite-description" class="theorem-description hidden">
+                <p><strong>Theorem 2:</strong> A graph is <strong>bipartite</strong> (can be split into two groups where no node connects to its own group) if and only if it has <strong>no odd-length cycles</strong>.</p>
+            </div>
+            <!-- ^^^^ End description boxes ^^^^ -->
             
             <div class="form-group">
                 <label for="sim-num-nodes">1. Set the number of nodes:</label>
-                <input type="number" id="sim-num-nodes" min="2" max="15" value="5"> <!-- Max changed to 15 for usability -->
+                <input type="number" id="sim-num-nodes" min="2" max="15" value="5">
             </div>
 
-            <!-- vvvv THE UI CHANGES ARE HERE vvvv -->
             <button id="generate-random-btn">Generate Random Graph</button>
             
             <div class="form-group">
@@ -41,7 +48,6 @@
                     <!-- Checkboxes will be dynamically inserted here -->
                 </div>
             </div>
-            <!-- ^^^^ END UI CHANGES ^^^^ -->
             
             <div id="simulation-results">
                 <h3>Results:</h3>
