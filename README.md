@@ -1,7 +1,7 @@
 # Serii3
 A Graph Understanding Website
 
-##STEPS TO RUN
+## STEPS TO RUN
 1. download zip file
 2. extract zip file
 3. open it with VS code
