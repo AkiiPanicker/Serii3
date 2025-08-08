@@ -1,0 +1,72 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Graph Creator</title>
+    
+    <!-- Link to our CSS file for styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Link to the Vis.js library for drawing the graph -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- The left side panel with controls -->
+        <div class="controls-panel">
+            <h1>Graph Creator! ✨</h1>
+            <p>Create a graph and see it change instantly!</p>
+             
+            <a href="{{ url_for('theorems') }}" class="nav-button">Explore Theorems 🔬</a>
+    <!-- ^^^^ NEW BUTTON ^^^^ -->
+    
+            <p>Create a graph and see it change instantly!</p>
+
+            <div class="form-group">
+                <label for="num-nodes">1. How many nodes (dots) do you want?</label>
+                <input type="number" id="num-nodes" min="1" max="15" placeholder="e.g., 5">
+            </div>
+
+            <div class="form-group">
+                <label>2. Now, check the boxes to connect them!</label>
+                <div id="connections-container">
+                    <!-- Connection inputs will be dynamically added here by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- The right side where the graph will appear -->
+        <div class="graph-panel">
+            <div id="graph-visualization"></div>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="hidden">
+        <div id="edit-modal">
+            <h2>Edit Node</h2>
+            <div class="modal-form-group">
+                <label for="modal-label-input">Label</label>
+                <input type="text" id="modal-label-input" placeholder="e.g., Home">
+            </div>
+            <div class="modal-form-group">
+                <label for="modal-color-input">Color</label>
+                <input type="color" id="modal-color-input" value="#90caff">
+            </div>
+            <div class="modal-form-group">
+                <label for="modal-size-input">Size</label>
+                <input type="range" id="modal-size-input" min="10" max="60" value="25">
+                <span id="modal-size-value">25</span>
+            </div>
+            <div class="modal-actions">
+                <button id="modal-save-btn">Save Changes</button>
+                <button id="modal-cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to our JavaScript file for interactivity -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
