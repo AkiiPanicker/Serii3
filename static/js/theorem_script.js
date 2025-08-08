@@ -1,4 +1,4 @@
-// static/js/theorem_script.js (Final Version with 12 Theorems)
+// static/js/theorem_script.js (Final Version with 14 Theorems/Algorithms)
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Get HTML Elements ---
@@ -13,10 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodes = new vis.DataSet([]);
     const edges = new vis.DataSet([]);
     const options = {
-        nodes: { shape: 'circle', borderWidth: 2, font: { size: 16, color: '#343a40' } },
-        edges: { 
+        nodes: { 
+            shape: 'circle', 
+            borderWidth: 2, 
+            font: { size: 16, color: '#343a40' } 
+        },
+        edges: {
             width: 2,
-            arrows: { to: { enabled: false } } // Arrows disabled globally, enabled per-edge for Eulerian
+            arrows: { to: { enabled: false } }, // Default off, enabled as needed
+            font: { align: 'top', color: '#0056b3', strokeWidth: 4, strokeColor: 'white' } // For Dijkstra's edge weights
         },
         physics: { enabled: true, solver: 'barnesHut' },
         interaction: { hover: true },
@@ -27,19 +32,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UTILITY & GRAPH ANALYSIS FUNCTIONS ---
 
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     function resetAllStyles() {
+        network.off('click'); // Remove any lingering click listeners
         const allNodeIds = nodes.getIds();
         if (allNodeIds.length > 0) {
-            const nodeUpdates = allNodeIds.map(id => ({ id, color: null, label: `${id}`, shape: 'circle', hidden: false }));
+            const nodeUpdates = allNodeIds.map(id => ({ id, color: null, label: `${id}`, shape: 'circle', hidden: false, font: {size: 16} }));
             nodes.update(nodeUpdates);
         }
         const allEdges = edges.get();
         if (allEdges.length > 0) {
-            // Ensure arrows from Eulerian path are disabled on reset
-            const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2, dashes: false, hidden: false, arrows: { to: { enabled: false } } }));
+            // Reset all visual properties, including labels for Dijkstra's
+            const edgeUpdates = allEdges.map(edge => ({ id: edge.id, color: null, width: 2, dashes: false, hidden: false, arrows: { to: { enabled: false } }, label: null }));
             edges.update(edgeUpdates);
         }
-        network.off('click'); // Remove any lingering click listeners from interactive proofs
     }
 
     function buildAdjacencyList() {
@@ -47,6 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
         edges.get().forEach(edge => {
             adj[edge.from].push(edge.to);
             adj[edge.to].push(edge.from);
+        });
+        return adj;
+    }
+
+    function buildWeightedAdjacencyList() {
+        const adj = nodes.getIds().reduce((acc, id) => { acc[id] = []; return acc; }, {});
+        edges.get().forEach(edge => {
+            const weight = parseInt(edge.label, 10) || 1; // Default to 1 if no weight
+            adj[edge.from].push({ node: edge.to, weight: weight });
+            adj[edge.to].push({ node: edge.from, weight: weight });
         });
         return adj;
     }
@@ -79,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         const isConnected = components.length === 1;
-        // A graph is a tree if it's connected and has p-1 edges.
         const isTree = isConnected && q === p - 1;
 
         return { isConnected, isTree, p, q, components };
@@ -273,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inG) {
             const [u, v, w] = triangleNodes;
             const edgeIds = [u < v ? `${u}-${v}` : `${v}-${u}`, u < w ? `${u}-${w}` : `${w}-${u}`, v < w ? `${v}-${w}` : `${w}-${v}`];
-            const edgeUpdates = edges.get(edgeIds).map(e => ({...e, color: 'red', width: 4}));
+            const edgeUpdates = edges.get({ filter: e => edgeIds.includes(e.id) }).map(e => ({...e, color: 'red', width: 4}));
             if (edgeUpdates.length > 0) edges.update(edgeUpdates);
         }
     }
@@ -458,7 +476,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const edgeId = params.edges[0];
                     const removedEdge = edges.get(edgeId);
                     
-                    // Temporarily hide for analysis
                     edges.update({id: edgeId, hidden: true });
                     const { components } = analyzeGraphProperties(); 
                     
@@ -470,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         let proofHtml = `<h3>Proof Step:</h3><p>Removing edge <strong>${removedEdge.from}-${removedEdge.to}</strong> splits the tree into 2 components (sub-trees).</p>`;
                         proofHtml += `<p>Component 1 has <strong>m=${m}</strong> vertices and (by induction) <strong>m-1 = ${m-1}</strong> edges.</p>`;
                         proofHtml += `<p>Component 2 has <strong>n=${n}</strong> vertices and (by induction) <strong>n-1 = ${n-1}</strong> edges.</p>`;
-                        proofHtml += `<p>Total edges = (m-1) + (n-1) + 1 (the removed edge) = ${m-1+n-1+1} which equals <strong>p-1</strong> (${p-1}).</p>`;
+                        proofHtml += `<p>Total edges = (m-1) + (n-1) + 1 (the removed edge) = ${m-1+n-1+1}, which equals <strong>p-1</strong> (${p-1}).</p>`;
                         resultsContainer.innerHTML = proofHtml;
                     }
                     edges.update({id: edgeId, hidden: false, color: 'red', width: 4 }); // Show the edge again, but highlighted
@@ -504,13 +521,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = '<h3>Step-by-Step Proof:</h3><div id="center-steps"><p>We will iteratively remove all leaf nodes (degree 1) until the center is revealed.</p></div>';
         const stepsDiv = document.getElementById('center-steps');
         
-        // Use copies to not destroy the original graph data
         let currentNodes = new vis.DataSet(nodes.get());
         let currentEdges = new vis.DataSet(edges.get());
         let step = 1;
         
         while (currentNodes.length > 2) {
-            // Find leaves in the current graph copy
             const degrees = {};
             currentNodes.getIds().forEach(id => { degrees[id] = 0; });
             currentEdges.get().forEach(edge => {
@@ -523,23 +538,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             stepsDiv.innerHTML += `<p><strong>Step ${step++}:</strong> Removing ${leaves.length} leaf node(s): ${leaves.join(', ')}</p>`;
             nodes.update(leaves.map(id => ({ id, color: { background: '#e0e0e0', border: '#a0a0a0'} })));
-            await new Promise(r => setTimeout(r, 1500)); // Pause for 1.5s
+            await sleep(1500);
             
             const edgesToRemove = currentEdges.get({ filter: e => leaves.includes(e.from) || leaves.includes(e.to) });
             
-            // Animate removal on main graph
             nodes.update(leaves.map(id => ({ id, hidden: true })));
             edges.update(edgesToRemove.map(e => ({ id: e.id, hidden: true })));
             
-            // Actually remove from copies for next iteration's logic
             currentNodes.remove(leaves);
             currentEdges.remove(edgesToRemove.map(e => e.id));
-            await new Promise(r => setTimeout(r, 1000)); // Pause for 1s
+            await sleep(1000);
         }
 
         const centerNodes = currentNodes.getIds();
         stepsDiv.innerHTML += `<p><strong>Final Step:</strong> Process complete.</p>`;
-        // Unhide and highlight the center nodes on the main graph
         nodes.update(centerNodes.map(id => ({ id, hidden: false, shape: 'star', color: { background: '#ffcc80', border: '#ff9800' } })));
         
         const conclusion = centerNodes.length === 1 
@@ -549,51 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /** Theorem 12: Eulerian Circuit */
-    function findEulerianCircuit() {
-        // Implementation of Hierholzer's algorithm
-        const adj = buildAdjacencyList();
-        const nodeIds = nodes.getIds();
-        if(nodeIds.length === 0) return null;
-
-        // Clone the adjacency list to track unused edges, as we'll be modifying it
-        let adjClone = {};
-        for (const key in adj) {
-            adjClone[key] = [...adj[key]];
-        }
-    
-        // Find a starting node. In a connected graph with even degrees, any node works.
-        const startNode = nodeIds[0];
-        let currPath = [startNode]; // A temporary path/stack
-        let circuit = []; // The final circuit
-    
-        while (currPath.length > 0) {
-            let u = currPath[currPath.length - 1]; // Current vertex is top of the stack
-            // If there's an unused edge from the current vertex
-            if (adjClone[u].length > 0) {
-                // Find a neighbor and move to it
-                let v = adjClone[u].pop();
-                
-                // Remove the corresponding edge from the neighbor's list to mark it as used
-                // This is crucial for undirected graphs.
-                const v_index = adjClone[v].indexOf(u);
-                if (v_index > -1) {
-                    adjClone[v].splice(v_index, 1);
-                }
-
-                // Add the new vertex to the current path
-                currPath.push(v);
-            } else {
-                // If the current vertex has no more outgoing edges,
-                // it means we've completed a cycle (or sub-cycle).
-                // Add it to our final circuit.
-                circuit.push(currPath.pop());
-            }
-        }
-        
-        // The circuit is built backwards, so we reverse it for the correct order
-        return circuit.reverse();
-    }
-    
     function runEulerianAnalysis() {
         resetAllStyles();
         const { p, isConnected } = analyzeGraphProperties();
@@ -635,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const v = circuit[i+1];
                     const edgeId = u < v ? `${u}-${v}` : `${v}-${u}`;
                     
-                    await new Promise(r => setTimeout(r, 600)); // Pause between steps
+                    await sleep(600);
                     
                     edges.update({ id: edgeId, color: '#4caf50', width: 4, arrows: {to: {enabled: true, scaleFactor:1.2}}});
                     nodes.update({ id: v, color: { background: '#a4f5b3' }});
@@ -645,8 +612,261 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 resultsContainer.innerHTML += `<div class="conclusion" style="margin-top: 15px;">Circuit Complete!</div>`;
-                btn.style.display = 'none'; // Hide button after animation completes
+                btn.style.display = 'none';
             });
+        }
+    }
+    
+    function findEulerianCircuit() {
+        const adj = buildAdjacencyList();
+        const nodeIds = nodes.getIds();
+        if(nodeIds.length === 0) return null;
+        let adjClone = {};
+        for (const key in adj) { adjClone[key] = [...adj[key]]; }
+    
+        const startNode = nodeIds[0];
+        let currPath = [startNode];
+        let circuit = [];
+    
+        while (currPath.length > 0) {
+            let u = currPath[currPath.length - 1];
+            if (adjClone[u].length > 0) {
+                let v = adjClone[u].pop();
+                const v_index = adjClone[v].indexOf(u);
+                if (v_index > -1) { adjClone[v].splice(v_index, 1); }
+                currPath.push(v);
+            } else {
+                circuit.push(currPath.pop());
+            }
+        }
+        return circuit.reverse();
+    }
+    
+    /** NEW - Algorithm 13: Hamiltonian Circuit */
+    function runHamiltonianAnalysis() {
+        resetAllStyles();
+        const adj = buildAdjacencyList();
+        const nodeIds = nodes.getIds();
+        const p = nodeIds.length;
+        
+        if (p < 3) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><p>A Hamiltonian circuit requires at least 3 vertices.</p>`;
+            return;
+        }
+
+        // Set a reasonable limit for this NP-complete problem to avoid freezing the browser.
+        if (p > 10) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">Computationally Too Complex</div><p>Finding a Hamiltonian Circuit is an NP-complete problem. This tool automatically checks graphs with up to 10 vertices. Yours has ${p}.</p>`;
+            return;
+        }
+
+        resultsContainer.innerHTML = '<h3>Results:</h3><p>Searching for a Hamiltonian Circuit... (this may take a moment)</p>';
+
+        setTimeout(() => { // Give browser time to render "Searching..." message
+            const { circuit, longestPath } = findHamiltonianCircuit(adj, nodeIds);
+
+            if (circuit) {
+                resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion">Hamiltonian Circuit Found!</div><p>This graph contains a path that visits every node exactly once before returning to the start.</p><button id="show-circuit-btn" class="form-button">Animate Circuit</button>`;
+                document.getElementById('show-circuit-btn').addEventListener('click', async (e) => {
+                    e.target.disabled = true;
+                    e.target.innerText = "Animating...";
+                    await animatePath(circuit, true);
+                    resultsContainer.innerHTML += `<div class="conclusion" style="margin-top:15px;">Animation Complete!</div>`;
+                });
+            } else {
+                resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">No Hamiltonian Circuit Found</div><p>There is no path that visits every node exactly once. The longest non-repeating path found is animated below.</p><button id="show-flawed-btn" class="form-button">Animate Longest Path</button>`;
+                document.getElementById('show-flawed-btn').addEventListener('click', async (e) => {
+                    e.target.disabled = true;
+                    e.target.innerText = "Animating...";
+                    await animatePath(longestPath, false);
+                    if(longestPath.length > 0) {
+                        nodes.update({ id: longestPath[longestPath.length - 1], color: { background: '#ff7b7b', border: '#d9534f' }});
+                    }
+                    resultsContainer.innerHTML += `<div class="conclusion" style="margin-top:15px; background-color: #d9534f;">Path gets stuck and cannot visit all nodes!</div>`;
+                });
+            }
+        }, 50);
+    }
+    
+    function findHamiltonianCircuit(adj, nodeIds) {
+        let longestPath = [];
+
+        function* solve(path, visited) {
+            // Keep track of the longest path found during the search
+            if (path.length > longestPath.length) {
+                longestPath = [...path];
+            }
+            
+            // If all nodes have been visited
+            if (path.length === nodeIds.length) {
+                const lastNode = path[path.length - 1];
+                const startNode = path[0];
+                // Check if it can return to the start to form a circuit
+                if (adj[lastNode]?.includes(startNode)) {
+                    yield [...path, startNode]; // SUCCESS: yield the full circuit
+                }
+                return; // End of this path
+            }
+            
+            const u = path[path.length - 1]; // Current node
+            for (const v of (adj[u] || [])) {
+                if (!visited.has(v)) {
+                    path.push(v);
+                    visited.add(v);
+                    yield* solve(path, visited); // Recurse
+                    visited.delete(v); // Backtrack
+                    path.pop();
+                }
+            }
+        }
+        
+        // Try starting from each node to find a circuit
+        for(const startNode of nodeIds) {
+            const path = [startNode];
+            const visited = new Set([startNode]);
+            const generator = solve(path, visited);
+            const result = generator.next();
+            if (!result.done) {
+                // Found a circuit, return it.
+                return { circuit: result.value, longestPath: result.value }; 
+            }
+        }
+
+        // If no circuit was found after trying all start nodes, return failure.
+        return { circuit: null, longestPath }; 
+    }
+
+    async function animatePath(path, isCircuit) {
+        resetAllStyles();
+        if(!path || path.length === 0) {
+            resultsContainer.innerHTML = `<h3>Error</h3><p>Could not find a path to animate.</p>`;
+            return;
+        };
+
+        let pathString = `<strong>Path:</strong> ${path[0]}`;
+        resultsContainer.innerHTML = `<p>${pathString}</p>`;
+        
+        nodes.update({ id: path[0], color: { background: '#a4f5b3', border: '#4caf50' }});
+
+        for(let i=0; i<path.length - 1; i++) {
+            await sleep(600);
+            const u = path[i];
+            const v = path[i+1];
+            pathString += ` &rarr; ${v}`;
+            resultsContainer.innerHTML = `<p>${pathString}</p>`;
+
+            nodes.update({ id: v, color: { background: '#a4f5b3', border: '#4caf50' }});
+            const edge = edges.get({filter: e => (e.from===u && e.to===v) || (e.from===v && e.to===u)})[0];
+            if(edge) {
+                edges.update({ id: edge.id, color: 'green', width: 4.5 });
+            }
+        }
+        if(isCircuit) {
+             resultsContainer.innerHTML = `<p>${pathString}</p><div class="conclusion">Returning to start... Complete!</div>`;
+        }
+    }
+
+
+    /** NEW - Algorithm 14: Dijkstra's Shortest Path */
+    function runDijkstraAnalysis() {
+        resetAllStyles();
+        const { isConnected } = analyzeGraphProperties();
+
+        if (!isConnected) {
+            resultsContainer.innerHTML = `<h3>Results:</h3><div class="conclusion" style="color: #d9534f;">Disconnected Graph</div><p>Dijkstra's algorithm requires a connected graph to find paths between all nodes.</p>`;
+            return;
+        }
+
+        // Add random weights to edges if they don't have them
+        const edgeUpdates = edges.get().map(edge => ({
+            id: edge.id,
+            label: String(Math.floor(Math.random() * 20) + 1)
+        }));
+        if(edgeUpdates.length > 0) edges.update(edgeUpdates);
+        
+        resultsContainer.innerHTML = `<h3>Dijkstra's Algorithm</h3><p>This algorithm finds the shortest path from a start node to all others. The edges have been given random weights.</p><div class="conclusion" style="background-color: #007bff">Click a node on the graph to set it as the START point!</div>`;
+        
+        network.once('click', async (params) => {
+            if (params.nodes.length > 0) {
+                const startNode = params.nodes[0];
+                resultsContainer.innerHTML = `<h3>Running Dijkstra from Node ${startNode}...</h3><div id="dijkstra-steps"></div>`;
+                await animateDijkstra(startNode);
+            } else {
+                 runDijkstraAnalysis(); // Reset if user clicks away from a node
+            }
+        });
+    }
+
+    async function animateDijkstra(startNode) {
+        const adj = buildWeightedAdjacencyList();
+        const nodeIds = nodes.getIds();
+        const distances = {};
+        const prev = {};
+        const pq = new Set(nodeIds);
+
+        nodeIds.forEach(id => {
+            distances[id] = Infinity;
+            prev[id] = null;
+            nodes.update({id, color: {background: '#e0e0e0', border: '#a0a0a0'}, label: `${id}\n(∞)`});
+        });
+        distances[startNode] = 0;
+        nodes.update({ id: startNode, color: { background: '#ffcc80', border: '#ff9800' }, label: `${startNode}\n(0)`});
+        
+        const stepsContainer = document.getElementById('dijkstra-steps');
+        stepsContainer.innerHTML = `<p><strong>Step 0:</strong> Initialized all distances to infinity, start node to 0.</p>`;
+        await sleep(2000);
+        
+        let step = 1;
+        while(pq.size > 0) {
+            let u = null;
+            let minDistance = Infinity;
+            for(const nodeId of pq) {
+                if (distances[nodeId] < minDistance) {
+                    minDistance = distances[nodeId];
+                    u = nodeId;
+                }
+            }
+            if(u === null || distances[u] === Infinity) break;
+
+            pq.delete(u);
+
+            nodes.update({ id: u, color: { background: '#ff7b7b', border: '#d9534f' }, font: {size: 22} }); // Highlight current node
+            stepsContainer.innerHTML += `<p><strong>Step ${step++}:</strong> Visiting node <strong>${u}</strong> (shortest distance found so far: ${distances[u]}). Looking at its neighbors...</p>`;
+            await sleep(1500);
+
+            for(const { node: v, weight } of (adj[u] || [])) {
+                if (pq.has(v)) {
+                    const edgeId = u < v ? `${u}-${v}` : `${v}-${u}`;
+                    edges.update({id: edgeId, color: 'orange', width: 3});
+                    await sleep(800);
+
+                    const alt = distances[u] + weight;
+                    if(alt < distances[v]) {
+                        distances[v] = alt;
+                        prev[v] = u;
+                        nodes.update({ id: v, label: `${v}\n(${alt})`, color: { background: '#8ce2ff' } }); // Light blue for "updated"
+                        stepsContainer.innerHTML += `<div class="log-entry">→ Path to <strong>${v}</strong> via <strong>${u}</strong> is shorter! New distance: ${alt}.</div>`;
+                    } else {
+                         stepsContainer.innerHTML += `<div class="log-entry log-entry-nochange">→ Path to <strong>${v}</strong> via <strong>${u}</strong> (${distances[u]}+${weight}=${alt}) is not shorter.</div>`;
+                    }
+                    await sleep(1500);
+                    edges.update({id: edgeId, color: null, width: 2});
+                }
+            }
+            nodes.update({ id: u, color: { background: '#a4f5b3', border: '#4caf50' }, font: {size: 16} }); // Mark as visited (green)
+        }
+
+        stepsContainer.innerHTML += `<div class="conclusion" style="margin-top: 15px;">Algorithm Finished!</div><p>Highlighting the shortest path tree from node ${startNode}.</p>`;
+
+        for (const nodeId of nodeIds) {
+            if (nodeId === startNode || !prev[nodeId]) continue;
+            let curr = nodeId;
+            while(prev[curr]) {
+                const p = prev[curr];
+                const edgeId = p < curr ? `${p}-${curr}` : `${curr}-${p}`;
+                edges.update({id: edgeId, color: '#007bff', width: 4.5});
+                curr = p;
+            }
         }
     }
 
@@ -654,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MASTER CONTROL & EVENT LOGIC ---
 
     function runActiveTheorem() {
-        resetAllStyles(); // Essential first step
+        resetAllStyles();
         const theorem = theoremSelect.value;
         if (theorem === 'odd_degree') runOddDegreeAnalysis();
         else if (theorem === 'bipartite') runBipartiteAnalysis();
@@ -667,7 +887,9 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (theorem === 'unique_path') runUniquePathAnalysis();
         else if (theorem === 'tree_edges') runTreeEdgesAnalysis();
         else if (theorem === 'tree_center') runTreeCenterAnalysis();
-        else if (theorem === 'eulerian') runEulerianAnalysis(); // Added new theorem
+        else if (theorem === 'eulerian') runEulerianAnalysis();
+        else if (theorem === 'hamiltonian') runHamiltonianAnalysis();
+        else if (theorem === 'dijkstra') runDijkstraAnalysis();
     }
 
     function setupNewGraph() {
@@ -685,31 +907,63 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateRandomGraph() {
         const num = parseInt(numNodesInput.value, 10);
         if (num < 1 || num > 15) return;
-        const isTreeTheorem = ['unique_path', 'tree_edges', 'tree_center'].includes(theoremSelect.value);
+        const theorem = theoremSelect.value;
+        
         edges.clear();
-        const newEdges = [];
+        const newEdgesSet = new Set();
+        let addedNodes = [];
 
-        if (isTreeTheorem && num > 0) {
-            // Generate a random tree using a simple algorithm
-            const addedNodes = [];
+        // Special generation logic for specific theorems
+        if (['unique_path', 'tree_edges', 'tree_center'].includes(theorem)) {
             if (num > 0) addedNodes.push(1);
             for (let i = 2; i <= num; i++) {
-                // Connect the new node 'i' to a random existing node in the tree
                 const connectToNode = addedNodes[Math.floor(Math.random() * addedNodes.length)];
-                newEdges.push({ id: `${Math.min(i, connectToNode)}-${Math.max(i, connectToNode)}`, from: i, to: connectToNode });
+                newEdgesSet.add(JSON.stringify({ id: `${Math.min(i, connectToNode)}-${Math.max(i, connectToNode)}`, from: i, to: connectToNode }));
                 addedNodes.push(i);
             }
-        } else {
-            // Standard random graph generation
+        } else if (theorem === 'hamiltonian') {
+            if(num > 2) {
+                let nodeList = nodes.getIds().sort(() => Math.random() - 0.5); // Shuffle nodes
+                // Create the base Hamiltonian cycle
+                for (let i = 0; i < num; i++) {
+                    const u = nodeList[i];
+                    const v = nodeList[(i + 1) % num];
+                    newEdgesSet.add(JSON.stringify({ id: `${Math.min(u,v)}-${Math.max(u,v)}`, from: u, to: v }));
+                }
+                 // Add random "chord" edges to make it more interesting
+                const maxExtraEdges = Math.floor(num * 0.5);
+                for(let i=0; i<maxExtraEdges; i++){
+                    let u = Math.floor(Math.random() * num) + 1;
+                    let v = Math.floor(Math.random() * num) + 1;
+                    if(u !== v) newEdgesSet.add(JSON.stringify({ id: `${Math.min(u,v)}-${Math.max(u,v)}`, from: u, to: v }));
+                }
+            }
+        } else { // Standard or connected random graph for other cases
+            let requiresConnection = ['dijkstra', 'min_degree_connect', 'diameter'].includes(theorem);
+            // First, generate a spanning tree if connection is required to guarantee it
+            if (requiresConnection && num > 1) {
+                if (num > 0) addedNodes.push(1);
+                for (let i = 2; i <= num; i++) {
+                    const connectToNode = addedNodes[Math.floor(Math.random() * addedNodes.length)];
+                    newEdgesSet.add(JSON.stringify({ id: `${Math.min(i, connectToNode)}-${Math.max(i, connectToNode)}`, from: i, to: connectToNode }));
+                    addedNodes.push(i);
+                }
+            }
+            // Then, add additional random edges
+            const probability = requiresConnection ? 0.25 : 0.4;
             for (let i = 1; i <= num; i++) {
                 for (let j = i + 1; j <= num; j++) {
-                    if (Math.random() < 0.4) newEdges.push({ id: `${i}-${j}`, from: i, to: j });
+                    if (Math.random() < probability) {
+                        newEdgesSet.add(JSON.stringify({ id: `${i}-${j}`, from: i, to: j }));
+                    }
                 }
             }
         }
+
+        const newEdges = Array.from(newEdgesSet).map(item => JSON.parse(item));
         if (newEdges.length > 0) edges.add(newEdges);
         syncCheckboxesToGraph();
-        setTimeout(runActiveTheorem, 50); // Small delay to let DOM update
+        setTimeout(runActiveTheorem, 50);
     }
     
     function createManualControls(num) {
@@ -722,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const list = document.createElement('div');
             list.className = 'checkbox-list';
             for (let j = 1; j <= num; j++) {
-                if (i === j) continue; // No self-loops in controls
+                if (i === j) continue;
                 list.innerHTML += `<label class="checkbox-item"><input type="checkbox" data-from="${i}" data-to="${j}">${j}</label>`;
             }
             group.appendChild(list);
@@ -733,21 +987,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function syncCheckboxesToGraph() {
         document.querySelectorAll('#connections-container input[type="checkbox"]').forEach(cb => cb.checked = false);
         edges.forEach(e => {
-            // Check both directions since controls are one-way for simplicity
             document.querySelectorAll(`input[data-from="${e.from}"][data-to="${e.to}"], input[data-from="${e.to}"][data-to="${e.from}"]`)
                   .forEach(cb => cb.checked = true);
         });
     }
 
     function handleEdgeChange(from, to, isChecked) {
-        // Ensure consistent ID (smaller-bigger)
         const edgeId = from < to ? `${from}-${to}` : `${to}-${from}`;
         if (isChecked && !edges.get(edgeId)) {
             edges.add({ id: edgeId, from, to });
         } else if (!isChecked && edges.get(edgeId)) {
             edges.remove(edgeId);
         }
-        syncCheckboxesToGraph(); // Reflect undirected nature in all checkboxes
+        syncCheckboxesToGraph();
     }
 
     theoremSelect.addEventListener('change', () => {
@@ -760,15 +1012,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isRamsey && parseInt(numNodesInput.value, 10) !== 6) {
             numNodesInput.value = 6;
             setupNewGraph();
+            return; // Exit here after setting up the Ramsey graph
+        }
+
+        const isTreeTheorem = ['unique_path', 'tree_edges', 'tree_center'].includes(theoremSelect.value);
+        const needsSpecialGraph = ['dijkstra', 'hamiltonian'].includes(theoremSelect.value);
+        const { isTree, p } = analyzeGraphProperties();
+
+        // If switching to a mode that needs a specially generated graph, do it.
+        if ((isTreeTheorem && (!isTree || p < 2)) || needsSpecialGraph) {
+             generateRandomGraph();
         } else {
-            // Helpful UX: If switching to a tree theorem with a non-tree graph, generate a new tree
-            const isTreeTheorem = ['unique_path', 'tree_edges', 'tree_center'].includes(theoremSelect.value);
-            const { isTree } = analyzeGraphProperties();
-            if (isTreeTheorem && !isTree) {
-                generateRandomGraph();
-            } else {
-                runActiveTheorem();
-            }
+            runActiveTheorem();
         }
     });
     
