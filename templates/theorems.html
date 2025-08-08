@@ -1,0 +1,60 @@
+<!-- templates/theorems.html (updated) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Theorem Simulator</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Side Panel -->
+        <div class="controls-panel theorem-panel">
+            <h1>Theorem Fun! 🧠</h1>
+            <a href="{{ url_for('index') }}" class="nav-button" style="background-color: #6c757d;">&larr; Back to Creator</a>
+            
+            <div class="form-group">
+                <label for="theorem-select">Select a Theorem:</label>
+                <select id="theorem-select" class="form-control" disabled> <!-- Disabled as we only have one -->
+                    <option value="odd_degree">Vertices of Odd Degree</option>
+                </select>
+            </div>
+
+            <div id="theorem-1-description" class="theorem-description">
+                <p><strong>Theorem:</strong> In any graph, the number of nodes with an odd number of connections is always an even number.</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="sim-num-nodes">1. Set the number of nodes:</label>
+                <input type="number" id="sim-num-nodes" min="2" max="15" value="5"> <!-- Max changed to 15 for usability -->
+            </div>
+
+            <!-- vvvv THE UI CHANGES ARE HERE vvvv -->
+            <button id="generate-random-btn">Generate Random Graph</button>
+            
+            <div class="form-group">
+                <label>2. Or, manually connect the nodes:</label>
+                <div id="connections-container">
+                    <!-- Checkboxes will be dynamically inserted here -->
+                </div>
+            </div>
+            <!-- ^^^^ END UI CHANGES ^^^^ -->
+            
+            <div id="simulation-results">
+                <h3>Results:</h3>
+                <p>Start connecting nodes or generate a random graph!</p>
+            </div>
+        </div>
+
+        <!-- Right Side Panel -->
+        <div class="graph-panel">
+            <div id="graph-visualization"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/theorem_script.js') }}"></script>
+</body>
+</html>
